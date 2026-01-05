@@ -10,7 +10,7 @@ resource "aws_cloudfront_origin_access_control" "s3" {
 # CloudFront Distribution
 resource "aws_cloudfront_distribution" "main" {
   enabled             = true
-  is_ipv6_enabled     = true
+  is_ipv6_enabled     = false
   comment             = "CloudFront distribution for ${var.project_name} static assets"
   default_root_object = "index.html"
   price_class         = "PriceClass_100"  # Use only North America and Europe

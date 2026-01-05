@@ -4,6 +4,7 @@ data "aws_availability_zones" "primary" {
 }
 
 data "aws_availability_zones" "dr" {
+  count    = var.enable_dr ? 1 : 0
   provider = aws.dr
   state    = "available"
 }
@@ -126,7 +127,7 @@ module "dr_vpc" {
 
   region             = var.dr_region
   vpc_cidr           = "10.1.0.0/16"  # Different CIDR for DR
-  availability_zones = length(var.availability_zones) > 0 ? var.availability_zones : slice(data.aws_availability_zones.dr.names, 0, 2)
+  availability_zones = length(var.availability_zones) > 0 ? var.availability_zones : slice(data.aws_availability_zones.dr[0].names, 0, 2)
   project_name       = var.project_name
   environment        = "${var.environment}-dr"
 }

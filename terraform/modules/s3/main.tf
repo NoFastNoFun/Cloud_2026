@@ -7,12 +7,12 @@ resource "aws_s3_bucket" "static_assets" {
   }
 }
 
-# S3 Bucket Versioning
+# S3 Bucket Versioning (disabled for cost optimization)
 resource "aws_s3_bucket_versioning" "static_assets" {
   bucket = aws_s3_bucket.static_assets.id
 
   versioning_configuration {
-    status = "Enabled"
+    status = "Disabled"
   }
 }
 
@@ -105,7 +105,7 @@ resource "aws_s3_bucket_public_access_block" "backups" {
   restrict_public_buckets = true
 }
 
-# S3 Lifecycle Policy for Backups
+# S3 Lifecycle Policy for Backups (reduced retention for cost optimization)
 resource "aws_s3_bucket_lifecycle_configuration" "backups" {
   bucket = aws_s3_bucket.backups.id
 
@@ -114,11 +114,11 @@ resource "aws_s3_bucket_lifecycle_configuration" "backups" {
     status = "Enabled"
 
     expiration {
-      days = 90
+      days = 30
     }
 
     noncurrent_version_expiration {
-      noncurrent_days = 30
+      noncurrent_days = 7
     }
   }
 }

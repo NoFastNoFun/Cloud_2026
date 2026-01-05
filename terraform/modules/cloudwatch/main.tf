@@ -129,7 +129,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_connections" {
 # CloudWatch Log Groups
 resource "aws_cloudwatch_log_group" "nginx_access" {
   name              = "/aws/ec2/${var.project_name}/${var.environment}/nginx/access"
-  retention_in_days = 7
+  retention_in_days = 3
 
   tags = {
     Name = "${var.project_name}-${var.environment}-nginx-access-logs"
@@ -138,7 +138,7 @@ resource "aws_cloudwatch_log_group" "nginx_access" {
 
 resource "aws_cloudwatch_log_group" "nginx_error" {
   name              = "/aws/ec2/${var.project_name}/${var.environment}/nginx/error"
-  retention_in_days = 7
+  retention_in_days = 3
 
   tags = {
     Name = "${var.project_name}-${var.environment}-nginx-error-logs"
@@ -147,7 +147,7 @@ resource "aws_cloudwatch_log_group" "nginx_error" {
 
 resource "aws_cloudwatch_log_group" "magento_system" {
   name              = "/aws/ec2/${var.project_name}/${var.environment}/magento/system"
-  retention_in_days = 7
+  retention_in_days = 3
 
   tags = {
     Name = "${var.project_name}-${var.environment}-magento-system-logs"

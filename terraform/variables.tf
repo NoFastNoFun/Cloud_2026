@@ -37,13 +37,13 @@ variable "availability_zones" {
 variable "instance_type" {
   description = "EC2 instance type for Magento servers"
   type        = string
-  default     = "t3.medium"
+  default     = "t3.small"
 }
 
 variable "min_size" {
   description = "Minimum number of instances in Auto Scaling Group"
   type        = number
-  default     = 2
+  default     = 1
 }
 
 variable "max_size" {
@@ -55,19 +55,19 @@ variable "max_size" {
 variable "desired_capacity" {
   description = "Desired number of instances in Auto Scaling Group"
   type        = number
-  default     = 2
+  default     = 1
 }
 
 variable "db_instance_class" {
   description = "RDS instance class"
   type        = string
-  default     = "db.t3.medium"
+  default     = "db.t3.small"
 }
 
 variable "db_allocated_storage" {
   description = "RDS allocated storage in GB"
   type        = number
-  default     = 100
+  default     = 50
 }
 
 variable "db_engine_version" {
@@ -123,7 +123,7 @@ variable "magento_base_url" {
 variable "enable_dr" {
   description = "Enable disaster recovery region (minimal resources)"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "allowed_cidr_blocks" {

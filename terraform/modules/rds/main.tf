@@ -38,7 +38,7 @@ resource "aws_db_instance" "main" {
   instance_class = var.db_instance_class
 
   allocated_storage     = var.db_allocated_storage
-  max_allocated_storage = var.db_allocated_storage * 2
+  max_allocated_storage = var.db_allocated_storage * 1.5
   storage_type          = "gp3"
   storage_encrypted     = true
 
@@ -50,11 +50,11 @@ resource "aws_db_instance" "main" {
   parameter_group_name   = aws_db_parameter_group.main.name
   vpc_security_group_ids = [var.security_group_id]
 
-  # Multi-AZ for high availability
-  multi_az = true
+  # Single-AZ for cost optimization (can be changed to true for high availability)
+  multi_az = false
 
   # Backup configuration
-  backup_retention_period = 7
+  backup_retention_period = 3
   backup_window          = "03:00-04:00"
   maintenance_window     = "mon:04:00-mon:05:00"
 
@@ -63,9 +63,8 @@ resource "aws_db_instance" "main" {
   final_snapshot_identifier = "${var.project_name}-${var.environment}-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
   deletion_protection       = false
 
-  # Performance Insights
-  performance_insights_enabled = true
-  performance_insights_retention_period = 7
+  # Performance Insights (disabled for cost optimization)
+  performance_insights_enabled = false
 
   # Monitoring
   enabled_cloudwatch_logs_exports = ["error", "general", "slow_query"]
