@@ -1,0 +1,38 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+terraform.tfvars
+*.tfvars.backup
+
+# Ansible
+*.retry
+.vault_pass
+ansible.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Sensitive files
+*.pem
+*.key
+secrets/
+.env
+
+# Documentation builds
+docs/*.pdf
+!docs/*.md
+
+# Temporary files
+*.tmp
+*.log
+
