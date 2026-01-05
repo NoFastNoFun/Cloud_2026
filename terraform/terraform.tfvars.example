@@ -6,15 +6,15 @@ environment    = "prod"
 # VPC Configuration
 vpc_cidr = "10.0.0.0/16"
 
-# EC2 Configuration
-instance_type    = "t3.medium"
-min_size         = 2
-max_size         = 6
-desired_capacity = 2
+# EC2 Configuration (Optimized for cost)
+instance_type    = "t3.small"     # Reduced from t3.medium for cost savings
+min_size         = 1              # Reduced from 2 for cost savings
+max_size         = 6               # Can scale up when needed
+desired_capacity = 1              # Reduced from 2 for cost savings
 
-# RDS Configuration
-db_instance_class    = "db.t3.medium"
-db_allocated_storage = 100
+# RDS Configuration (Optimized for cost)
+db_instance_class    = "db.t3.small"  # Reduced from db.t3.medium for cost savings
+db_allocated_storage = 50             # Reduced from 100GB for cost savings
 db_engine_version    = "8.0"
 db_name              = "magento"
 db_username          = "admin"
@@ -32,6 +32,6 @@ magento_base_url       = ""  # Will be set to ALB DNS if empty
 allowed_cidr_blocks = ["0.0.0.0/0"]  # Restrict in production
 key_pair_name       = "your-key-pair-name"  # Optional: for SSH access
 
-# DR Configuration
-enable_dr = true
+# DR Configuration (Disabled by default for cost savings)
+enable_dr = false  # Set to true if disaster recovery is required (~$20/month additional cost)
 
