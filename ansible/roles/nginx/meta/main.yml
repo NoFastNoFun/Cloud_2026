@@ -1,0 +1,9 @@
+---
+galaxy_info:
+  author: GreenLeaf Team
+  description: Nginx installation and configuration for Magento
+  license: MIT
+  min_ansible_version: 2.9
+
+dependencies: []
+

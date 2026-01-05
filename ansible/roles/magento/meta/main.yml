@@ -1,0 +1,11 @@
+---
+galaxy_info:
+  author: GreenLeaf Team
+  description: Magento Open Source installation and configuration
+  license: MIT
+  min_ansible_version: 2.9
+
+dependencies:
+  - nginx
+  - php
+

@@ -1,0 +1,28 @@
+---
+- name: Update system packages
+  package:
+    name: "*"
+    state: latest
+  when: ansible_os_family == "RedHat"
+
+- name: Install basic packages
+  package:
+    name:
+      - git
+      - wget
+      - unzip
+      - curl
+      - vim
+      - htop
+    state: present
+
+- name: Set timezone
+  timezone:
+    name: "{{ timezone }}"
+
+- name: Ensure SSM agent is running
+  systemd:
+    name: amazon-ssm-agent
+    state: started
+    enabled: yes
+

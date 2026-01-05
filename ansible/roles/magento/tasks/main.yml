@@ -1,0 +1,87 @@
+---
+- name: Create Magento directory
+  file:
+    path: "{{ magento_install_dir }}"
+    state: directory
+    owner: nginx
+    group: nginx
+    mode: '0755'
+
+- name: Download Magento
+  get_url:
+    url: "https://github.com/magento/magento2/archive/{{ magento_version }}.zip"
+    dest: /tmp/magento-{{ magento_version }}.zip
+    mode: '0644'
+
+- name: Extract Magento
+  unarchive:
+    src: /tmp/magento-{{ magento_version }}.zip
+    dest: /tmp
+    remote_src: yes
+
+- name: Copy Magento files
+  copy:
+    src: "/tmp/magento2-{{ magento_version }}/"
+    dest: "{{ magento_install_dir }}"
+    owner: nginx
+    group: nginx
+    mode: preserve
+    remote_src: yes
+
+- name: Set Magento permissions
+  file:
+    path: "{{ item }}"
+    owner: nginx
+    group: nginx
+    mode: '{{ item | regex_replace(".*", "0775") if item.endswith("/") else "0664" }}'
+    recurse: yes
+  loop:
+    - "{{ magento_install_dir }}/var"
+    - "{{ magento_install_dir }}/pub/static"
+    - "{{ magento_install_dir }}/pub/media"
+    - "{{ magento_install_dir }}/generated"
+
+- name: Make Magento CLI executable
+  file:
+    path: "{{ magento_install_dir }}/bin/magento"
+    mode: '0755'
+
+- name: Install Magento via CLI
+  command: >
+    php {{ magento_install_dir }}/bin/magento setup:install
+    --base-url={{ magento_base_url }}/
+    --db-host={{ db_host }}
+    --db-name={{ db_name }}
+    --db-user={{ db_user }}
+    --db-password={{ db_password }}
+    --admin-firstname={{ magento_admin_firstname }}
+    --admin-lastname={{ magento_admin_lastname }}
+    --admin-email={{ magento_admin_email }}
+    --admin-user={{ magento_admin_username }}
+    --admin-password={{ magento_admin_password }}
+    --language={{ magento_language }}
+    --currency={{ magento_currency }}
+    --timezone={{ magento_timezone }}
+    --use-rewrites=1
+    --use-secure=0
+    --use-secure-admin=0
+    --backend-frontname={{ magento_backend_frontname }}
+    --search-engine=elasticsearch7
+    --elasticsearch-host=localhost
+    --elasticsearch-port=9200
+    --elasticsearch-index-prefix=magento2
+    --elasticsearch-timeout=15
+  args:
+    chdir: "{{ magento_install_dir }}"
+    creates: "{{ magento_install_dir }}/app/etc/env.php"
+  become_user: nginx
+  when: db_host != "" and db_password != ""
+
+- name: Create health check file
+  copy:
+    content: "OK"
+    dest: "{{ magento_install_dir }}/pub/health_check.php"
+    owner: nginx
+    group: nginx
+    mode: '0644'
+

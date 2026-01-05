@@ -1,0 +1,45 @@
+---
+- name: Enable PHP repository
+  command: amazon-linux-extras enable php{{ php_version }}
+  changed_when: false
+
+- name: Install PHP and extensions
+  package:
+    name:
+      - php
+      - php-fpm
+      - php-cli
+      - php-common
+      - php-gd
+      - php-intl
+      - php-mbstring
+      - php-mysqlnd
+      - php-opcache
+      - php-xml
+      - php-zip
+      - php-json
+      - php-curl
+      - php-bcmath
+      - php-soap
+    state: present
+
+- name: Configure PHP-FPM
+  template:
+    src: www.conf.j2
+    dest: /etc/php-fpm.d/www.conf
+    mode: '0644'
+  notify: restart php-fpm
+
+- name: Configure PHP settings
+  template:
+    src: php.ini.j2
+    dest: /etc/php.ini
+    mode: '0644'
+  notify: restart php-fpm
+
+- name: Ensure PHP-FPM is started and enabled
+  systemd:
+    name: php-fpm
+    state: started
+    enabled: yes
+
