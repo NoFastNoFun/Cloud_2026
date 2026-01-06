@@ -79,26 +79,25 @@ resource "aws_iam_instance_profile" "ec2" {
 # User Data Script
 locals {
   user_data = base64encode(templatefile("${path.module}/user_data.sh", {
-    db_endpoint           = var.db_endpoint
-    db_name               = var.db_name
-    db_username           = var.db_username
-    db_password           = var.db_password
-    s3_bucket_name        = var.s3_bucket_name
-    cloudfront_url        = var.cloudfront_url
-    magento_version       = var.magento_version
-    php_version           = var.php_version
-    magento_admin_username = var.magento_admin_username
-    magento_admin_password = var.magento_admin_password
-    magento_admin_email   = var.magento_admin_email
-    magento_base_url      = var.magento_base_url
-    project_name          = var.project_name
-    environment           = var.environment
-    region                = var.region
+    db_endpoint            = var.db_endpoint
+    db_name                = var.db_name
+    db_username            = var.db_username
+    db_password            = var.db_password
+    s3_bucket_name         = var.s3_bucket_name
+    cloudfront_url         = var.cloudfront_url
+    prestashop_version     = var.prestashop_version
+    php_version            = var.php_version
+    prestashop_admin_email = var.prestashop_admin_email
+    prestashop_admin_password = var.prestashop_admin_password
+    prestashop_domain      = var.prestashop_domain
+    project_name           = var.project_name
+    environment             = var.environment
+    region                 = var.region
   }))
 }
 
 # Launch Template
-resource "aws_launch_template" "magento" {
+resource "aws_launch_template" "prestashop" {
   name_prefix   = "${var.project_name}-${var.environment}-"
   image_id      = data.aws_ami.amazon_linux.id
   instance_type = var.instance_type
@@ -132,7 +131,7 @@ resource "aws_launch_template" "magento" {
   tag_specifications {
     resource_type = "instance"
     tags = {
-      Name = "${var.project_name}-${var.environment}-magento"
+      Name = "${var.project_name}-${var.environment}-prestashop"
     }
   }
 
@@ -158,7 +157,7 @@ data "aws_ami" "amazon_linux" {
 }
 
 # Auto Scaling Group
-resource "aws_autoscaling_group" "magento" {
+resource "aws_autoscaling_group" "prestashop" {
   name                = "${var.project_name}-${var.environment}-asg"
   vpc_zone_identifier = var.private_subnet_ids
   target_group_arns   = [var.target_group_arn]
@@ -170,13 +169,13 @@ resource "aws_autoscaling_group" "magento" {
   desired_capacity = var.desired_capacity
 
   launch_template {
-    id      = aws_launch_template.magento.id
+    id      = aws_launch_template.prestashop.id
     version = "$Latest"
   }
 
   tag {
     key                 = "Name"
-    value               = "${var.project_name}-${var.environment}-magento"
+    value               = "${var.project_name}-${var.environment}-prestashop"
     propagate_at_launch = true
   }
 
@@ -194,7 +193,7 @@ resource "aws_autoscaling_policy" "scale_up" {
   scaling_adjustment     = 1
   adjustment_type        = "ChangeInCapacity"
   cooldown               = 300
-  autoscaling_group_name = aws_autoscaling_group.magento.name
+  autoscaling_group_name = aws_autoscaling_group.prestashop.name
 }
 
 resource "aws_autoscaling_policy" "scale_down" {
@@ -202,6 +201,6 @@ resource "aws_autoscaling_policy" "scale_down" {
   scaling_adjustment     = -1
   adjustment_type        = "ChangeInCapacity"
   cooldown               = 300
-  autoscaling_group_name = aws_autoscaling_group.magento.name
+  autoscaling_group_name = aws_autoscaling_group.prestashop.name
 }
 

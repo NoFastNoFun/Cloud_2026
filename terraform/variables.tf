@@ -35,7 +35,7 @@ variable "availability_zones" {
 }
 
 variable "instance_type" {
-  description = "EC2 instance type for Magento servers"
+  description = "EC2 instance type for PrestaShop servers"
   type        = string
   default     = "t3.small"
 }
@@ -79,7 +79,7 @@ variable "db_engine_version" {
 variable "db_name" {
   description = "Database name"
   type        = string
-  default     = "magento"
+  default     = "prestashop"
 }
 
 variable "db_username" {
@@ -95,27 +95,20 @@ variable "db_password" {
   sensitive   = true
 }
 
-variable "magento_admin_username" {
-  description = "Magento admin username"
-  type        = string
-  default     = "admin"
-  sensitive   = true
-}
-
-variable "magento_admin_password" {
-  description = "Magento admin password"
-  type        = string
-  sensitive   = true
-}
-
-variable "magento_admin_email" {
-  description = "Magento admin email"
+variable "prestashop_admin_email" {
+  description = "PrestaShop admin email"
   type        = string
   default     = "admin@greenleaf.example.com"
 }
 
-variable "magento_base_url" {
-  description = "Magento base URL"
+variable "prestashop_admin_password" {
+  description = "PrestaShop admin password"
+  type        = string
+  sensitive   = true
+}
+
+variable "prestashop_domain" {
+  description = "PrestaShop domain (will be set to ALB DNS if empty)"
   type        = string
   default     = ""
 }
@@ -138,10 +131,10 @@ variable "key_pair_name" {
   default     = ""
 }
 
-variable "magento_version" {
-  description = "Magento Open Source version"
+variable "prestashop_version" {
+  description = "PrestaShop version (e.g., 8.* for latest 8.x)"
   type        = string
-  default     = "2.4.7"
+  default     = "8.*"
 }
 
 variable "php_version" {

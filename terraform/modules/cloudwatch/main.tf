@@ -145,12 +145,12 @@ resource "aws_cloudwatch_log_group" "nginx_error" {
   }
 }
 
-resource "aws_cloudwatch_log_group" "magento_system" {
-  name              = "/aws/ec2/${var.project_name}/${var.environment}/magento/system"
+resource "aws_cloudwatch_log_group" "prestashop_system" {
+  name              = "/aws/ec2/${var.project_name}/${var.environment}/prestashop/system"
   retention_in_days = 3
 
   tags = {
-    Name = "${var.project_name}-${var.environment}-magento-system-logs"
+    Name = "${var.project_name}-${var.environment}-prestashop-system-logs"
   }
 }
 

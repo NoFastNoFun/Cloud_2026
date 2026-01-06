@@ -87,8 +87,8 @@ variable "cloudfront_url" {
   type        = string
 }
 
-variable "magento_version" {
-  description = "Magento version"
+variable "prestashop_version" {
+  description = "PrestaShop version"
   type        = string
 }
 
@@ -97,25 +97,19 @@ variable "php_version" {
   type        = string
 }
 
-variable "magento_admin_username" {
-  description = "Magento admin username"
+variable "prestashop_admin_email" {
+  description = "PrestaShop admin email"
+  type        = string
+}
+
+variable "prestashop_admin_password" {
+  description = "PrestaShop admin password"
   type        = string
   sensitive   = true
 }
 
-variable "magento_admin_password" {
-  description = "Magento admin password"
-  type        = string
-  sensitive   = true
-}
-
-variable "magento_admin_email" {
-  description = "Magento admin email"
-  type        = string
-}
-
-variable "magento_base_url" {
-  description = "Magento base URL"
+variable "prestashop_domain" {
+  description = "PrestaShop domain"
   type        = string
 }
 

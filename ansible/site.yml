@@ -1,5 +1,5 @@
 ---
-- name: Configure Magento E-commerce Platform
+- name: Configure PrestaShop E-commerce Platform
   hosts: all
   become: yes
   gather_facts: yes
@@ -16,7 +16,7 @@
     - nginx
     - php
     - mysql-client
-    - magento
+    - prestashop
     - cloudwatch-agent
 
   post_tasks:

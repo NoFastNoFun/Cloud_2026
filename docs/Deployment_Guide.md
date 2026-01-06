@@ -146,16 +146,16 @@ desired_capacity = 1              # Réduit de 2 pour économiser
 db_instance_class    = "db.t3.small"  # Réduit de db.t3.medium pour économiser
 db_allocated_storage = 50             # Réduit de 100GB pour économiser
 db_engine_version    = "8.0"
-db_name              = "magento"
+db_name              = "prestashop"
 db_username          = "admin"
 db_password          = "VOTRE_MOT_DE_PASSE_SECURISE"  # ⚠️ CHANGEZ-MOI
 
-# Magento
-magento_version         = "2.4.7"
+# PrestaShop
+prestashop_version      = "8.*"  # Latest PrestaShop 8.x
 php_version             = "8.2"
-magento_admin_username  = "admin"
-magento_admin_password  = "VOTRE_MOT_DE_PASSE_SECURISE"  # ⚠️ CHANGEZ-MOI
-magento_admin_email     = "admin@greenleaf.example.com"
+prestashop_admin_email  = "admin@greenleaf.example.com"
+prestashop_admin_password = "VOTRE_MOT_DE_PASSE_SECURISE"  # ⚠️ CHANGEZ-MOI
+prestashop_domain        = ""  # Will be set to ALB DNS if empty
 
 # Security
 allowed_cidr_blocks = ["0.0.0.0/0"]  # Restreindre en production
@@ -167,7 +167,7 @@ enable_dr = false  # Mettre à true si la récupération d'urgence est requise (
 
 **⚠️ IMPORTANT - Variables à modifier obligatoirement :**
 - `db_password` : Définir un mot de passe sécurisé pour la base de données
-- `magento_admin_password` : Définir un mot de passe sécurisé pour l'admin Magento
+- `prestashop_admin_password` : Définir un mot de passe sécurisé pour l'admin PrestaShop
 - `key_pair_name` : Optionnel, mais recommandé pour l'accès SSH
 
 ### 3. Initialiser Terraform
@@ -194,7 +194,7 @@ Avant de déployer, notez ces points importants :
 
 5. **Variables Obligatoires à Modifier** :
    - `db_password` : DOIT être changé
-   - `magento_admin_password` : DOIT être changé
+   - `prestashop_admin_password` : DOIT être changé
    - `key_pair_name` : Recommandé pour l'accès SSH
 
 6. **Coûts Estimés** : ~$75/mois avec la configuration optimisée par défaut.
@@ -246,16 +246,16 @@ Noter particulièrement :
 - `primary_rds_endpoint` : Endpoint de la base de données
 - `primary_cloudfront_url` : URL CloudFront
 
-### Étape 4 : Mettre à Jour la Configuration Magento
+### Étape 4 : Mettre à Jour la Configuration PrestaShop
 
-Si `magento_base_url` n'était pas défini, mettre à jour :
+Si `prestashop_domain` n'était pas défini, mettre à jour :
 
 ```bash
 # Récupérer l'ALB DNS
 ALB_DNS=$(terraform output -raw primary_alb_dns)
 
 # Mettre à jour terraform.tfvars
-# magento_base_url = "http://${ALB_DNS}"
+# prestashop_domain = "${ALB_DNS}"
 ```
 
 Puis re-appliquer (seulement les ressources concernées seront mises à jour) :
@@ -271,8 +271,8 @@ terraform apply
 ### Option 1 : Configuration Automatique (User-Data)
 
 Les instances EC2 sont automatiquement configurées via le script user-data lors du lancement. Cela inclut :
-- Installation de Nginx, PHP, MySQL client
-- Installation et configuration de Magento
+- Installation de Nginx, PHP, MySQL client, Composer
+- Installation et configuration de PrestaShop via Composer
 - Configuration de CloudWatch Agent
 
 **Vérification** : Attendre 10-15 minutes après le déploiement pour que l'installation soit complète.
@@ -292,7 +292,7 @@ L'inventory dynamique AWS EC2 est déjà configuré dans `ansible/inventory/aws_
 ```yaml
 db_host: "VOTRE_RDS_ENDPOINT"
 db_password: "VOTRE_MOT_DE_PASSE"
-magento_base_url: "http://VOTRE_ALB_DNS"
+prestashop_domain: "VOTRE_ALB_DNS"
 ```
 
 3. **Exécuter le playbook Ansible**
@@ -336,9 +336,9 @@ aws autoscaling describe-auto-scaling-groups --query 'AutoScalingGroups[*].[Auto
    # Devrait retourner "OK"
    ```
 
-3. **Accéder à l'interface Magento**
+3. **Accéder à l'interface PrestaShop**
    - Ouvrir un navigateur : `http://${ALB_DNS}`
-   - Vérifier que la page Magento s'affiche
+   - Vérifier que la page PrestaShop s'affiche
    - Accéder à l'admin : `http://${ALB_DNS}/admin`
 
 ### 3. Tester l'Auto Scaling
@@ -444,7 +444,7 @@ aws ssm start-session --target <instance-id>
 
 # Vérifier les logs
 sudo tail -f /var/log/cloud-init-output.log
-sudo tail -f /var/log/magento-install.log
+sudo tail -f /var/log/prestashop-install.log
 ```
 
 **Solutions**
@@ -452,7 +452,7 @@ sudo tail -f /var/log/magento-install.log
 - Vérifier les IAM Roles
 - Vérifier la connectivité RDS depuis les instances
 
-### Problème : Magento ne s'installe pas
+### Problème : PrestaShop ne s'installe pas
 
 **Vérifications**
 ```bash
@@ -462,16 +462,20 @@ aws ssm start-session --target <instance-id>
 # Vérifier PHP
 php -v
 
+# Vérifier Composer
+composer --version
+
 # Vérifier la connexion à la base de données
 mysql -h <RDS_ENDPOINT> -u admin -p
 
 # Vérifier les permissions
-ls -la /var/www/magento
+ls -la /var/www/prestashop
 ```
 
 **Solutions**
 - Vérifier les credentials RDS
-- Vérifier les permissions des fichiers Magento
+- Vérifier les permissions des fichiers PrestaShop
+- Vérifier que Composer est installé correctement
 - Ré-exécuter l'installation manuellement si nécessaire
 
 ### Problème : ALB ne route pas le trafic
@@ -671,7 +675,7 @@ aws ce get-cost-and-usage \
 - [Documentation AWS](https://docs.aws.amazon.com/)
 - [Documentation Terraform](https://www.terraform.io/docs)
 - [Documentation Ansible](https://docs.ansible.com/)
-- [Documentation Magento](https://devdocs.magento.com/)
+- [Documentation PrestaShop](https://devdocs.prestashop.com/)
 
 ### Contacts
 

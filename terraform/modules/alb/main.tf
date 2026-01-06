@@ -1,5 +1,5 @@
 # Target Group for EC2 instances
-resource "aws_lb_target_group" "magento" {
+resource "aws_lb_target_group" "prestashop" {
   name     = "${var.project_name}-${var.environment}-tg"
   port     = 80
   protocol = "HTTP"
@@ -48,7 +48,7 @@ resource "aws_lb_listener" "http" {
 
   default_action {
     type = "forward"
-    target_group_arn = aws_lb_target_group.magento.arn
+    target_group_arn = aws_lb_target_group.prestashop.arn
   }
 }
 
@@ -63,7 +63,7 @@ resource "aws_lb_listener" "http" {
 #
 #   default_action {
 #     type             = "forward"
-#     target_group_arn = aws_lb_target_group.magento.arn
+#     target_group_arn = aws_lb_target_group.prestashop.arn
 #   }
 # }
 

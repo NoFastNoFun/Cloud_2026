@@ -95,15 +95,14 @@ module "primary_ec2" {
   db_name               = var.db_name
   db_username           = var.db_username
   db_password           = var.db_password
-  s3_bucket_name        = module.primary_s3.bucket_name
-  cloudfront_url        = module.primary_cloudfront.distribution_url
-  magento_version       = var.magento_version
-  php_version           = var.php_version
-  magento_admin_username = var.magento_admin_username
-  magento_admin_password = var.magento_admin_password
-  magento_admin_email   = var.magento_admin_email
-  magento_base_url      = var.magento_base_url != "" ? var.magento_base_url : "http://${module.primary_alb.alb_dns_name}"
-  region                = var.primary_region
+  s3_bucket_name         = module.primary_s3.bucket_name
+  cloudfront_url         = module.primary_cloudfront.distribution_url
+  prestashop_version     = var.prestashop_version
+  php_version            = var.php_version
+  prestashop_admin_email = var.prestashop_admin_email
+  prestashop_admin_password = var.prestashop_admin_password
+  prestashop_domain      = var.prestashop_domain != "" ? var.prestashop_domain : module.primary_alb.alb_dns_name
+  region                 = var.primary_region
 }
 
 # Primary Region - CloudWatch Module
@@ -187,14 +186,13 @@ module "dr_ec2" {
   db_name               = var.db_name
   db_username           = var.db_username
   db_password           = var.db_password
-  s3_bucket_name        = module.primary_s3.bucket_name  # Can share S3 or have separate
-  cloudfront_url        = module.primary_cloudfront.distribution_url
-  magento_version       = var.magento_version
-  php_version           = var.php_version
-  magento_admin_username = var.magento_admin_username
-  magento_admin_password = var.magento_admin_password
-  magento_admin_email   = var.magento_admin_email
-  magento_base_url      = var.magento_base_url != "" ? var.magento_base_url : "http://${module.dr_alb[0].alb_dns_name}"
-  region                = var.dr_region
+  s3_bucket_name         = module.primary_s3.bucket_name  # Can share S3 or have separate
+  cloudfront_url         = module.primary_cloudfront.distribution_url
+  prestashop_version     = var.prestashop_version
+  php_version            = var.php_version
+  prestashop_admin_email = var.prestashop_admin_email
+  prestashop_admin_password = var.prestashop_admin_password
+  prestashop_domain      = var.prestashop_domain != "" ? var.prestashop_domain : module.dr_alb[0].alb_dns_name
+  region                 = var.dr_region
 }
 

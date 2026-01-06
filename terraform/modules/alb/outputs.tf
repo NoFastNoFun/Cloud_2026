@@ -15,11 +15,11 @@ output "alb_dns_name" {
 
 output "target_group_arn" {
   description = "ARN of the target group"
-  value       = aws_lb_target_group.magento.arn
+  value       = aws_lb_target_group.prestashop.arn
 }
 
 output "target_group_id" {
   description = "ID of the target group"
-  value       = aws_lb_target_group.magento.id
+  value       = aws_lb_target_group.prestashop.id
 }
 

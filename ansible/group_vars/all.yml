@@ -1,27 +1,25 @@
 ---
-# Magento Configuration
-magento_version: "2.4.7"
-magento_install_dir: "/var/www/magento"
-magento_admin_firstname: "Admin"
-magento_admin_lastname: "User"
-magento_admin_email: "admin@greenleaf.example.com"
-magento_admin_username: "admin"
-magento_admin_password: "ChangeMe123!"
-magento_base_url: ""  # Will be set dynamically
-magento_backend_frontname: "admin"
-magento_language: "en_US"
-magento_currency: "USD"
-magento_timezone: "America/New_York"
+# PrestaShop Configuration
+prestashop_version: "8.*"
+prestashop_install_dir: "/var/www/prestashop"
+prestashop_admin_firstname: "Admin"
+prestashop_admin_lastname: "User"
+prestashop_admin_email: "admin@greenleaf.example.com"
+prestashop_admin_password: "ChangeMe123!"
+prestashop_domain: ""  # Will be set dynamically
+prestashop_language: "en"
+prestashop_country: "us"
+prestashop_timezone: "America/New_York"
 
 # PHP Configuration
 php_version: "8.2"
-php_memory_limit: "2G"
-php_max_execution_time: 600
-php_max_input_vars: 20000
+php_memory_limit: "512M"
+php_max_execution_time: 300
+php_max_input_vars: 5000
 
 # Database Configuration (will be passed via vars or SSM Parameter Store)
 db_host: ""  # Will be set dynamically
-db_name: "magento"
+db_name: "prestashop"
 db_user: "admin"
 db_password: ""  # Will be set dynamically
 
@@ -40,9 +38,8 @@ cloudwatch_log_groups:
     retention_days: 7
   - name: "/aws/ec2/greenleaf/prod/nginx/error"
     retention_days: 7
-  - name: "/aws/ec2/greenleaf/prod/magento/system"
+  - name: "/aws/ec2/greenleaf/prod/prestashop/system"
     retention_days: 7
 
 # System Configuration
 timezone: "UTC"
-

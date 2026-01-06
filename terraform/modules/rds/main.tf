@@ -13,7 +13,7 @@ resource "aws_db_parameter_group" "main" {
   name   = "${var.project_name}-${var.environment}-mysql-${replace(var.db_engine_version, ".", "")}"
   family = "mysql${replace(var.db_engine_version, ".", "")}"
 
-  # Optimize for Magento
+  # Optimize for PrestaShop
   parameter {
     name  = "max_connections"
     value = "500"

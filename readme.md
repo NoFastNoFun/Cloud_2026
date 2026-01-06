@@ -2,7 +2,7 @@
 
 ## 📖 Project Overview
 
-This project involves designing, deploying, and documenting a scalable cloud infrastructure on **AWS** for **GreenLeaf**, a startup specializing in eco-friendly products. The goal is to host the **Magento Open Source** e-commerce platform while ensuring high availability, security, and cost efficiency.
+This project involves designing, deploying, and documenting a scalable cloud infrastructure on **AWS** for **GreenLeaf**, a startup specializing in eco-friendly products. The goal is to host the **PrestaShop** e-commerce platform while ensuring high availability, security, and cost efficiency.
 
 This repository contains the **Infrastructure as Code (IaC)** and **Configuration Management** scripts required to provision the environment from scratch.
 
@@ -11,7 +11,7 @@ This repository contains the **Infrastructure as Code (IaC)** and **Configuratio
 The infrastructure is built to meet the following requirements:
 
 - **Cloud Provider**: Amazon Web Services (AWS)
-- **Application**: Magento Open Source 2.4.7
+- **Application**: PrestaShop 8.x (latest stable)
 - **Infrastructure as Code**: Terraform
 - **Configuration Management**: Ansible
 - **Regions**: Multi-region deployment (Ireland primary, Frankfurt DR)
@@ -54,9 +54,9 @@ The infrastructure is built to meet the following requirements:
 │   └── roles/
 │       ├── common/              # System updates and basic packages
 │       ├── nginx/               # Nginx installation and configuration
-│       ├── php/                 # PHP 8.2 with Magento extensions
+│       ├── php/                 # PHP 8.2 with PrestaShop extensions
 │       ├── mysql-client/        # MySQL client installation
-│       ├── magento/             # Magento Open Source installation
+│       ├── prestashop/          # PrestaShop installation
 │       └── cloudwatch-agent/   # CloudWatch agent configuration
 ├── docs/                         # Project documentation
 │   ├── DAT.md                    # Technical Architecture Document
@@ -119,16 +119,16 @@ For comprehensive deployment instructions, troubleshooting, and maintenance proc
 
 ## 💰 FinOps & Budget
 
-**Estimated Monthly Cost**: ~$370/month (baseline)
+**Estimated Monthly Cost**: ~$75/month (optimized configuration)
 
-**Cost Breakdown**:
-- EC2 (2x t3.medium): ~$60/month
-- RDS (db.t3.medium Multi-AZ): ~$150/month
-- ALB (2 regions): ~$40/month
-- NAT Gateways: ~$65/month
-- Other services (EBS, S3, CloudFront, CloudWatch): ~$55/month
+**Cost Breakdown** (optimized):
+- EC2 (1x t3.small): ~$15/month
+- RDS (db.t3.small Single-AZ): ~$30/month
+- ALB (1 region): ~$20/month
+- NAT Instance: ~$5/month
+- Other services (EBS, S3, CloudFront, CloudWatch): ~$5/month
 
-**Note**: The $500/month budget mentioned in project requirements is hypothetical. Actual costs vary based on usage, traffic, and data storage.
+**Note**: The infrastructure is optimized to stay under $100/month. Actual costs vary based on usage, traffic, and data storage.
 
 **Optimization Strategy**: This project utilizes cost-effective resources and Auto Scaling to match demand. A full analysis of costs and optimization recommendations can be found in [FinOps Report](docs/FinOps_Report.md).
 
@@ -175,7 +175,7 @@ All project documentation is available in the `docs/` directory:
 ## 📊 Monitoring
 
 - **CloudWatch Alarms**: CPU, memory, disk usage, RDS metrics
-- **CloudWatch Logs**: Nginx access/error logs, Magento system logs
+- **CloudWatch Logs**: Nginx access/error logs, PrestaShop system logs
 - **Auto Scaling**: Automatic scaling based on CPU utilization
 - **Health Checks**: ALB health checks on `/health_check.php`
 
