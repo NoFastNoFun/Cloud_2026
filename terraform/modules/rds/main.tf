@@ -55,8 +55,8 @@ resource "aws_db_instance" "main" {
 
   # Backup configuration
   backup_retention_period = 3
-  backup_window          = "03:00-04:00"
-  maintenance_window     = "mon:04:00-mon:05:00"
+  backup_window           = "03:00-04:00"
+  maintenance_window      = "mon:04:00-mon:05:00"
 
   # Enable automated backups
   skip_final_snapshot       = false
@@ -67,7 +67,7 @@ resource "aws_db_instance" "main" {
   performance_insights_enabled = false
 
   # Monitoring
-  enabled_cloudwatch_logs_exports = ["error", "general", "slow_query"]
+  enabled_cloudwatch_logs_exports = ["error", "general", "slowquery"]
 
   tags = {
     Name = "${var.project_name}-${var.environment}-db"

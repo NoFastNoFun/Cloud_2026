@@ -133,7 +133,7 @@ fi
 
 cd /var/www/prestashop
 sudo -u nginx php install/index_cli.php \
-    --domain=${PRESTASHOP_DOMAIN} \
+    --domain=$PRESTASHOP_DOMAIN \
     --db_server="${db_endpoint}" \
     --db_name="${db_name}" \
     --db_user="${db_username}" \
