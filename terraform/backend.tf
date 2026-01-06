@@ -1,9 +1,9 @@
 terraform {
   backend "s3" {
-    bucket         = "[to-rename-bucket]"
-    key            = "[to-rename-key]"
-    region         = "eu-west-1" 
-    dynamodb_table = "[to-rename-dynamodb-table]"
+    bucket         = "nf2-terraform-state-bucket"
+    key            = "terraform.tfstate"
+    region         = "eu-west-1"
+    dynamodb_table = "nf2-terraform-lock"
     encrypt        = true
   }
 }
