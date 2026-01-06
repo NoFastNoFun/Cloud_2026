@@ -79,20 +79,20 @@ resource "aws_iam_instance_profile" "ec2" {
 # User Data Script
 locals {
   user_data = base64encode(templatefile("${path.module}/user_data.sh", {
-    db_endpoint            = var.db_endpoint
-    db_name                = var.db_name
-    db_username            = var.db_username
-    db_password            = var.db_password
-    s3_bucket_name         = var.s3_bucket_name
-    cloudfront_url         = var.cloudfront_url
-    prestashop_version     = var.prestashop_version
-    php_version            = var.php_version
-    prestashop_admin_email = var.prestashop_admin_email
+    db_endpoint               = var.db_endpoint
+    db_name                   = var.db_name
+    db_username               = var.db_username
+    db_password               = var.db_password
+    s3_bucket_name            = var.s3_bucket_name
+    cloudfront_url            = var.cloudfront_url
+    prestashop_version        = var.prestashop_version
+    php_version               = var.php_version
+    prestashop_admin_email    = var.prestashop_admin_email
     prestashop_admin_password = var.prestashop_admin_password
-    prestashop_domain      = var.prestashop_domain
-    project_name           = var.project_name
-    environment             = var.environment
-    region                 = var.region
+    prestashop_domain         = var.prestashop_domain
+    project_name              = var.project_name
+    environment               = var.environment
+    region                    = var.region
   }))
 }
 
@@ -114,7 +114,7 @@ resource "aws_launch_template" "prestashop" {
   block_device_mappings {
     device_name = "/dev/xvda"
     ebs {
-      volume_size           = 20
+      volume_size           = 30
       volume_type           = "gp3"
       delete_on_termination = true
       encrypted             = true
@@ -125,7 +125,7 @@ resource "aws_launch_template" "prestashop" {
     http_endpoint               = "enabled"
     http_tokens                 = "required"
     http_put_response_hop_limit = 1
-    instance_metadata_tags     = "enabled"
+    instance_metadata_tags      = "enabled"
   }
 
   tag_specifications {
@@ -158,10 +158,10 @@ data "aws_ami" "amazon_linux" {
 
 # Auto Scaling Group
 resource "aws_autoscaling_group" "prestashop" {
-  name                = "${var.project_name}-${var.environment}-asg"
-  vpc_zone_identifier = var.private_subnet_ids
-  target_group_arns   = [var.target_group_arn]
-  health_check_type   = "ELB"
+  name                      = "${var.project_name}-${var.environment}-asg"
+  vpc_zone_identifier       = var.private_subnet_ids
+  target_group_arns         = [var.target_group_arn]
+  health_check_type         = "ELB"
   health_check_grace_period = 300
 
   min_size         = var.min_size

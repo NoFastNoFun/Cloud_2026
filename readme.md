@@ -222,3 +222,6 @@ This project is part of an academic assignment.
 **Project Duration**: 1 week  
 **Context**: Student Project  
 **Last Updated**: 2026-01-05
+
+pour créer une clé ssh 
+aws ec2 create-key-pair --key-name greenleaf-key --query 'KeyMaterial' --output text > greenleaf-key.pem
