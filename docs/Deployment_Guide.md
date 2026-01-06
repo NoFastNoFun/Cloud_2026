@@ -1,9 +1,6 @@
 # Guide de Déploiement et d'Exploitation
-## GreenLeaf E-commerce Platform - AWS Infrastructure
 
-**Version:** 1.0  
 **Date:** 2026-01-05
-**Auteur:** Équipe GreenLeaf
 
 ---
 
@@ -94,29 +91,9 @@
 ### 1. Cloner le Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/NoFastNoFun/Cloud_2026
 cd Cloud_2026
 ```
-
-### 1.1. Comprendre les Optimisations de Coût
-
-Cette infrastructure a été optimisée pour réduire les coûts de ~$370/mois à ~$75/mois. Les optimisations incluent :
-
-- **NAT Instance** au lieu de NAT Gateways (économie ~$50/mois)
-- **RDS Single-AZ** au lieu de Multi-AZ (économie ~$75/mois)
-- **Instances plus petites** : t3.small et db.t3.small (économie ~$45/mois)
-- **1 instance EC2 minimum** au lieu de 2 (économie ~$15/mois)
-- **DR région désactivée** par défaut (économie ~$20/mois)
-- **Rétentions réduites** : backups (3 jours), logs (3 jours), S3 (30 jours)
-- **Performance Insights désactivé** (économie ~$5/mois)
-- **S3 versioning désactivé** pour les assets statiques
-- **EBS volumes réduits** : 20GB au lieu de 30GB
-
-**Note** : Si vous avez besoin de haute disponibilité, vous pouvez :
-- Activer `enable_dr = true` pour la région DR (~$20/mois)
-- Changer RDS en Multi-AZ dans `modules/rds/main.tf` (~$75/mois)
-- Augmenter `min_size` et `desired_capacity` à 2 (~$15/mois)
-- Utiliser des instances plus grandes si nécessaire
 
 ### 2. Configurer les Variables Terraform
 
@@ -215,14 +192,6 @@ Vérifier que le plan correspond à vos attentes. Vous devriez voir :
 - CloudFront Distribution
 - CloudWatch Alarms
 
-**Note sur les optimisations de coût :**
-- NAT Instance au lieu de NAT Gateways : économie de ~$50/mois
-- RDS Single-AZ au lieu de Multi-AZ : économie de ~$75/mois
-- Instance EC2 t3.small au lieu de t3.medium : économie de ~$15/mois
-- 1 instance EC2 minimum au lieu de 2 : économie de ~$15/mois
-- DR région désactivée par défaut : économie de ~$20/mois
-- Coût total estimé : ~$75/mois (au lieu de ~$370/mois)
-
 ### Étape 2 : Déploiement
 
 ```bash
@@ -290,9 +259,13 @@ L'inventory dynamique AWS EC2 est déjà configuré dans `ansible/inventory/aws_
 Éditer `ansible/group_vars/all.yml` avec les valeurs correctes :
 
 ```yaml
-db_host: "VOTRE_RDS_ENDPOINT"
-db_password: "VOTRE_MOT_DE_PASSE"
-prestashop_domain: "VOTRE_ALB_DNS"
+db_host: "VOTRE_RDS_ENDPOINT"  # Récupérer via: terraform output -raw primary_rds_endpoint
+db_name: "prestashop"
+db_user: "admin"  # Ou la valeur de db_username dans terraform.tfvars
+db_password: "VOTRE_MOT_DE_PASSE"  # Même valeur que dans terraform.tfvars
+prestashop_domain: "VOTRE_ALB_DNS"  # Récupérer via: terraform output -raw primary_alb_dns
+prestashop_admin_email: "admin@greenleaf.example.com"
+prestashop_admin_password: "VOTRE_MOT_DE_PASSE_ADMIN"  # Même valeur que dans terraform.tfvars
 ```
 
 3. **Exécuter le playbook Ansible**
@@ -310,7 +283,7 @@ ansible-playbook site.yml
 
 ```bash
 # Vérifier les instances EC2
-aws ec2 describe-instances --filters "Name=tag:Project,Values=GreenLeaf" --query 'Reservations[*].Instances[*].[InstanceId,State.Name,PrivateIpAddress]' --output table
+aws ec2 describe-instances --filters "Name=tag:Project,Values=GreenLeaf" --query 'Reservations[*].Instances[*].[InstanceId,State.Name,PrivateIpAddress,Tags[?Key==`Name`].Value|[0]]' --output table
 
 # Vérifier l'ALB
 aws elbv2 describe-load-balancers --query 'LoadBalancers[*].[LoadBalancerName,DNSName,State.Code]' --output table
@@ -344,9 +317,17 @@ aws autoscaling describe-auto-scaling-groups --query 'AutoScalingGroups[*].[Auto
 ### 3. Tester l'Auto Scaling
 
 ```bash
+# Obtenir le nom de l'Auto Scaling Group (remplacez greenleaf et prod par vos valeurs si différentes)
+ASG_NAME="greenleaf-prod-asg"
+
+# Ou récupérer dynamiquement
+ASG_NAME=$(aws autoscaling describe-auto-scaling-groups \
+  --query 'AutoScalingGroups[?contains(AutoScalingGroupName, `greenleaf`) && contains(AutoScalingGroupName, `prod`)].AutoScalingGroupName' \
+  --output text | head -1)
+
 # Augmenter manuellement la capacité désirée
 aws autoscaling set-desired-capacity \
-  --auto-scaling-group-name greenleaf-prod-asg \
+  --auto-scaling-group-name $ASG_NAME \
   --desired-capacity 3
 
 # Vérifier que de nouvelles instances sont lancées
@@ -354,7 +335,7 @@ aws ec2 describe-instances --filters "Name=tag:Project,Values=GreenLeaf" --query
 
 # Remettre à 1 (valeur optimisée par défaut)
 aws autoscaling set-desired-capacity \
-  --auto-scaling-group-name greenleaf-prod-asg \
+  --auto-scaling-group-name $ASG_NAME \
   --desired-capacity 1
 ```
 
@@ -400,9 +381,17 @@ aws logs describe-log-groups --log-group-name-prefix /aws/ec2/greenleaf --query 
 - Multi-AZ : Désactivé (Single-AZ pour économiser ~$75/mois)
 - Snapshots manuels :
   ```bash
+  # Obtenir l'identifiant de l'instance RDS (remplacez greenleaf et prod par vos valeurs si différentes)
+  DB_IDENTIFIER="greenleaf-prod-db"
+  
+  # Ou récupérer dynamiquement
+  DB_IDENTIFIER=$(aws rds describe-db-instances \
+    --query 'DBInstances[?contains(DBInstanceIdentifier, `greenleaf`) && contains(DBInstanceIdentifier, `prod`)].DBInstanceIdentifier' \
+    --output text | head -1)
+  
   aws rds create-db-snapshot \
-    --db-instance-identifier greenleaf-prod-db \
-    --db-snapshot-identifier greenleaf-prod-snapshot-$(date +%Y%m%d)
+    --db-instance-identifier $DB_IDENTIFIER \
+    --db-snapshot-identifier ${DB_IDENTIFIER}-snapshot-$(date +%Y%m%d)
   ```
 
 **S3 Backups**
@@ -473,10 +462,29 @@ ls -la /var/www/prestashop
 ```
 
 **Solutions**
-- Vérifier les credentials RDS
-- Vérifier les permissions des fichiers PrestaShop
-- Vérifier que Composer est installé correctement
-- Ré-exécuter l'installation manuellement si nécessaire
+- Vérifier les credentials RDS (db_host, db_name, db_user, db_password)
+- Vérifier les permissions des fichiers PrestaShop (var/, img/, upload/, download/)
+- Vérifier que Composer est installé correctement : `composer --version`
+- Vérifier que le répertoire /var/www/prestashop existe et appartient à nginx:nginx
+- Vérifier les logs d'installation : `/var/log/prestashop-install.log`
+- Si l'installation échoue, se connecter à l'instance et exécuter manuellement :
+  ```bash
+  cd /var/www/prestashop
+  sudo -u nginx php install/index_cli.php \
+    --domain=<DOMAIN> \
+    --db_server=<RDS_ENDPOINT> \
+    --db_name=prestashop \
+    --db_user=admin \
+    --db_password=<PASSWORD> \
+    --email=<ADMIN_EMAIL> \
+    --password=<ADMIN_PASSWORD> \
+    --firstname=Admin \
+    --lastname=User \
+    --language=en \
+    --country=us \
+    --newsletter=0 \
+    --send_email=0
+  ```
 
 ### Problème : ALB ne route pas le trafic
 
@@ -498,8 +506,13 @@ aws elbv2 describe-target-health --target-group-arn <target-group-arn>
 
 **Vérifications**
 ```bash
+# Obtenir l'identifiant de l'instance RDS
+DB_IDENTIFIER=$(aws rds describe-db-instances \
+  --query 'DBInstances[?contains(DBInstanceIdentifier, `greenleaf`) && contains(DBInstanceIdentifier, `prod`)].DBInstanceIdentifier' \
+  --output text | head -1)
+
 # Vérifier le statut RDS
-aws rds describe-db-instances --db-instance-identifier greenleaf-prod-db
+aws rds describe-db-instances --db-instance-identifier $DB_IDENTIFIER
 
 # Vérifier les Security Groups
 aws ec2 describe-security-groups --filters "Name=tag:Name,Values=greenleaf-prod-rds-sg"
@@ -514,9 +527,9 @@ aws ec2 describe-security-groups --filters "Name=tag:Name,Values=greenleaf-prod-
 
 **Vérifications**
 ```bash
-# Vérifier les coûts par service
+# Vérifier les coûts par service (remplacez les dates par la période souhaitée)
 aws ce get-cost-and-usage \
-  --time-period Start=2024-01-01,End=2024-01-31 \
+  --time-period Start=$(date -d '1 month ago' +%Y-%m-01),End=$(date +%Y-%m-%d) \
   --granularity MONTHLY \
   --metrics BlendedCost \
   --group-by Type=DIMENSION,Key=SERVICE
@@ -563,8 +576,11 @@ terraform validate
 # Lister toutes les ressources taguées
 aws resourcegroupstaggingapi get-resources --tag-filters Key=Project,Values=GreenLeaf
 
-# Voir les coûts
-aws ce get-cost-and-usage --time-period Start=2024-01-01,End=2024-01-31 --granularity MONTHLY --metrics BlendedCost
+# Voir les coûts (remplacez les dates par la période souhaitée)
+aws ce get-cost-and-usage \
+  --time-period Start=$(date -d '1 month ago' +%Y-%m-01),End=$(date +%Y-%m-%d) \
+  --granularity MONTHLY \
+  --metrics BlendedCost
 ```
 
 ### Ansible
@@ -686,31 +702,6 @@ Pour toute question ou problème :
 
 ---
 
-## Optimisations de Coût
-
-### Configuration Actuelle (Optimisée)
-
-L'infrastructure a été optimisée pour réduire les coûts de **~$370/mois à ~$75/mois** (80% de réduction).
-
-#### Optimisations Implémentées
-
-| Optimisation | Économie | Impact |
-|-------------|---------|--------|
-| NAT Instance au lieu de NAT Gateways | ~$50/mois | Moins de disponibilité, mais 80% moins cher |
-| RDS Single-AZ au lieu de Multi-AZ | ~$75/mois | Pas de failover automatique |
-| Instance EC2 t3.small au lieu de t3.medium | ~$15/mois | Moins de CPU/RAM |
-| RDS db.t3.small au lieu de db.t3.medium | ~$30/mois | Moins de CPU/RAM |
-| 1 instance EC2 minimum au lieu de 2 | ~$15/mois | Pas de redondance au démarrage |
-| DR région désactivée | ~$20/mois | Pas de récupération d'urgence |
-| Performance Insights désactivé | ~$5/mois | Moins de monitoring détaillé |
-| Backup retention 3 jours au lieu de 7 | ~$2/mois | Moins de backups disponibles |
-| CloudWatch logs 3 jours au lieu de 7 | ~$2/mois | Moins d'historique de logs |
-| S3 backup retention 30 jours au lieu de 90 | ~$1/mois | Moins de backups S3 |
-| EBS volumes 20GB au lieu de 30GB | ~$1.60/mois | Moins d'espace disque |
-| S3 versioning désactivé | Variable | Pas d'historique de versions |
-
-**Total économisé : ~$295/mois**
-
 ### Activer la Haute Disponibilité (Optionnel)
 
 Si vous avez besoin de haute disponibilité, vous pouvez activer ces options (coûts supplémentaires) :
@@ -773,5 +764,5 @@ aws ce get-cost-and-usage \
 ---
 
 **Document Version:** 1.0  
-**Dernière Mise à Jour:** 2024
+**Dernière Mise à Jour:** 2026-01-05
 
