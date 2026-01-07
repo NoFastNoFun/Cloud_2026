@@ -5,7 +5,7 @@ prestashop_install_dir: "/var/www/prestashop"
 prestashop_admin_firstname: "Admin"
 prestashop_admin_lastname: "User"
 prestashop_admin_email: "admin@greenleaf.example.com"
-prestashop_admin_password: "ChangeMe123!"
+prestashop_admin_password: "NoFastNoFun2026!"
 prestashop_domain: "presta.nf2.dev"
 prestashop_language: "en"
 prestashop_country: "us"
@@ -18,10 +18,10 @@ php_max_execution_time: 300
 php_max_input_vars: 5000
 
 # Database Configuration (will be passed via vars or SSM Parameter Store)
-db_host: ""  # Will be set dynamically
+db_host: "greenleaf-prod-db.claw2q6eohy7.eu-west-1.rds.amazonaws.com"
 db_name: "prestashop"
 db_user: "admin"
-db_password: ""  # Will be set dynamically
+db_password: "NoFastNoFun2026!"
 
 # Nginx Configuration
 nginx_worker_processes: "auto"
