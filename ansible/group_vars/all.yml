@@ -6,7 +6,7 @@ prestashop_admin_firstname: "Admin"
 prestashop_admin_lastname: "User"
 prestashop_admin_email: "admin@greenleaf.example.com"
 prestashop_admin_password: "ChangeMe123!"
-prestashop_domain: ""  # Will be set dynamically
+prestashop_domain: "presta.nf2.dev"
 prestashop_language: "en"
 prestashop_country: "us"
 prestashop_timezone: "America/New_York"

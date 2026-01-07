@@ -4,7 +4,7 @@ upstream fastcgi_backend {
 
 server {
     listen 80;
-    server_name _;
+    server_name {{ prestashop_domain | default('_', true) }};
     
     root {{ prestashop_install_dir }};
 
