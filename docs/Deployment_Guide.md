@@ -1,6 +1,8 @@
 # Guide de Déploiement et d'Exploitation
 
-**Date:** 2026-01-05
+**Date:** 2026-01-08
+
+> **NOUVEAU:** Le déploiement ne nécessite plus Ansible. Tout est automatisé via Terraform et user_data.
 
 ---
 
@@ -9,11 +11,10 @@
 1. [Prérequis](#prérequis)
 2. [Configuration Initiale](#configuration-initiale)
 3. [Déploiement de l'Infrastructure](#déploiement-de-linfrastructure)
-4. [Configuration de l'Application](#configuration-de-lapplication)
-5. [Vérification et Tests](#vérification-et-tests)
-6. [Maintenance](#maintenance)
-7. [Dépannage](#dépannage)
-8. [Optimisations de Coût](#optimisations-de-coût)
+4. [Vérification et Tests](#vérification-et-tests)
+5. [Maintenance](#maintenance)
+6. [Dépannage](#dépannage)
+7. [Optimisations de Coût](#optimisations-de-coût)
 
 ---
 
@@ -43,16 +44,7 @@
    terraform version
    ```
 
-3. **Ansible** (version >= 2.9)
-   ```bash
-   # Installation (via pip)
-   pip3 install ansible boto3
-   
-   # Vérification
-   ansible --version
-   ```
-
-4. **Git**
+3. **Git**
    ```bash
    # Installation
    sudo yum install git -y  # Amazon Linux
@@ -200,7 +192,9 @@ terraform apply
 
 Terraform va demander confirmation. Tapez `yes` pour continuer.
 
-**Durée estimée : 15-20 minutes**
+**Durée estimée : 10-15 minutes**
+
+L'infrastructure se configure automatiquement via user_data. Aucune configuration manuelle n'est nécessaire.
 
 ### Étape 3 : Récupérer les Outputs
 
@@ -233,46 +227,12 @@ Puis re-appliquer (seulement les ressources concernées seront mises à jour) :
 terraform apply
 ```
 
----
-
-## Configuration de l'Application
-
-### Option 1 : Configuration Automatique (User-Data)
-
-Les instances EC2 sont automatiquement configurées via le script user-data lors du lancement. Cela inclut :
-- Installation de Nginx, PHP, MySQL client, Composer
-- Installation et configuration de PrestaShop via Composer
-- Configuration de CloudWatch Agent
-
-**Vérification** : Attendre 10-15 minutes après le déploiement pour que l'installation soit complète.
-
-### Option 2 : Configuration via Ansible (Recommandé pour Maintenance)
-
-Si vous souhaitez reconfigurer ou mettre à jour :
-
-1. **Configurer l'inventory Ansible**
-
-L'inventory dynamique AWS EC2 est déjà configuré dans `ansible/inventory/aws_ec2.yml`.
-
-2. **Mettre à jour les variables**
-
-Éditer `ansible/group_vars/all.yml` avec les valeurs correctes :
-
-```yaml
-db_host: "VOTRE_RDS_ENDPOINT"  # Récupérer via: terraform output -raw primary_rds_endpoint
-db_name: "prestashop"
-db_user: "admin"  # Ou la valeur de db_username dans terraform.tfvars
-db_password: "VOTRE_MOT_DE_PASSE"  # Même valeur que dans terraform.tfvars
-prestashop_domain: "VOTRE_ALB_DNS"  # Récupérer via: terraform output -raw primary_alb_dns
-prestashop_admin_email: "admin@greenleaf.example.com"
-prestashop_admin_password: "VOTRE_MOT_DE_PASSE_ADMIN"  # Même valeur que dans terraform.tfvars
-```
-
-3. **Exécuter le playbook Ansible**
+Les instances s'installent et se configurent automatiquement via user_data. Monitorer via :
 
 ```bash
-cd ansible
-ansible-playbook site.yml
+# Voir les logs d'installation
+aws ssm start-session --target <instance-id>
+sudo tail -f /var/log/user-data.log
 ```
 
 ---
@@ -355,23 +315,27 @@ aws logs describe-log-groups --log-group-name-prefix /aws/ec2/greenleaf --query 
 
 ### Mises à Jour de l'Infrastructure
 
-1. **Modifier la configuration Terraform**
-   ```bash
-   # Éditer les fichiers .tf ou terraform.tfvars
-   vim terraform/variables.tf
-   
-   # Planifier les changements
-   terraform plan
-   
-   # Appliquer
-   terraform apply
-   ```
+```bash
+# Éditer les fichiers .tf ou terraform.tfvars
+vim terraform/variables.tf
 
-2. **Mises à Jour de l'Application (Ansible)**
-   ```bash
-   cd ansible
-   ansible-playbook site.yml
-   ```
+# Planifier les changements
+terraform plan
+
+# Appliquer
+terraform apply
+```
+
+### Mises à Jour de la Configuration Application
+
+```bash
+# Éditer le script user_data
+vim terraform/modules/ec2/user_data.sh
+
+# Forcer le remplacement des instances
+terraform taint aws_autoscaling_group.prestashop
+terraform apply
+```
 
 ### Sauvegardes
 
@@ -583,17 +547,17 @@ aws ce get-cost-and-usage \
   --metrics BlendedCost
 ```
 
-### Ansible
+### SSM (Accès aux Instances)
 
 ```bash
-# Tester la connexion
-ansible all -m ping
+# Se connecter à une instance
+aws ssm start-session --target <instance-id>
 
-# Voir les hosts
-ansible-inventory --list
+# Voir les logs de déploiement
+sudo cat /var/log/user-data.log
 
-# Exécuter une commande sur tous les hosts
-ansible all -m shell -a "df -h"
+# Vérifier les services
+systemctl status nginx php-fpm amazon-cloudwatch-agent
 ```
 
 ---
@@ -763,6 +727,5 @@ aws ce get-cost-and-usage \
 
 ---
 
-**Document Version:** 1.0  
-**Dernière Mise à Jour:** 2026-01-05
-
+**Document Version:** 2.0  
+**Dernière Mise à Jour:** 2026-01-08  

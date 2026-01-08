@@ -1,5 +1,9 @@
 # GreenLeaf E-commerce Cloud Infrastructure
 
+> **🚀 NEW: Simplified Deployment!** 
+> This project now supports deployment with **Terraform only** - no Ansible required!
+> See [Quick Start Guide](QUICK_START.md) for the fastest deployment method.
+
 ## 📖 Project Overview
 
 This project involves designing, deploying, and documenting a scalable cloud infrastructure on **AWS** for **GreenLeaf**, a startup specializing in eco-friendly products. The goal is to host the **PrestaShop** e-commerce platform while ensuring high availability, security, and cost efficiency.
@@ -12,8 +16,8 @@ The infrastructure is built to meet the following requirements:
 
 - **Cloud Provider**: Amazon Web Services (AWS)
 - **Application**: PrestaShop 8.x (latest stable)
-- **Infrastructure as Code**: Terraform
-- **Configuration Management**: Ansible
+- **Infrastructure as Code**: Terraform (with automated user_data configuration)
+- **Configuration Management**: Built into user_data script (Ansible optional)
 - **Regions**: Multi-region deployment (Ireland primary, Frankfurt DR)
 
 **Key Features**:
@@ -44,7 +48,7 @@ The infrastructure is built to meet the following requirements:
 │       ├── s3/                   # S3 buckets for static assets and backups
 │       ├── cloudfront/           # CloudFront distribution
 │       └── cloudwatch/           # CloudWatch alarms and log groups
-├── ansible/                      # Ansible playbooks and roles
+├── ansible/                      # Ansible playbooks (OPTIONAL - legacy)
 │   ├── ansible.cfg               # Ansible configuration
 │   ├── site.yml                  # Main playbook
 │   ├── inventory/
@@ -58,6 +62,7 @@ The infrastructure is built to meet the following requirements:
 │       ├── mysql-client/        # MySQL client installation
 │       ├── prestashop/          # PrestaShop installation
 │       └── cloudwatch-agent/   # CloudWatch agent configuration
+│   NOTE: All configuration is now automated via user_data.sh
 ├── docs/                         # Project documentation
 │   ├── DAT.md                    # Technical Architecture Document
 │   ├── FinOps_Report.md          # Cost analysis and optimization strategies
@@ -73,8 +78,9 @@ Ensure you have the following tools installed:
 
 - [AWS CLI](https://aws.amazon.com/cli/) (v2.x) configured with appropriate credentials
 - [Terraform](https://www.terraform.io/) (>= 1.0)
-- [Ansible](https://www.ansible.com/) (>= 2.9)
 - Git
+
+**Note**: Ansible is NO LONGER REQUIRED. All configuration is automated via Terraform user_data scripts.
 
 ### Quick Start
 
@@ -91,29 +97,47 @@ cp terraform.tfvars.example terraform.tfvars
 # Edit terraform.tfvars with your values (especially passwords)
 ```
 
-3. **Provision Infrastructure (Terraform)**
+3. **Deploy Infrastructure (Single Command)**
 ```bash
 terraform init
-terraform plan
-terraform apply
+terraform plan -out=tfplan
+terraform apply tfplan
 ```
 
-**Note**: The deployment takes approximately 15-20 minutes. EC2 instances are automatically configured via user-data scripts.
+**That's it!** The deployment takes approximately 10-15 minutes. Everything is automated:
+- Infrastructure provisioning
+- Application installation (Nginx, PHP, PrestaShop)
+- Database configuration
+- Monitoring setup (CloudWatch)
+- Security hardening
 
 4. **Access the Application**
 ```bash
 # Get the ALB DNS name
-terraform output primary_alb_dns
+terraform output alb_dns_name
 
-# Access in browser
-# http://<ALB_DNS>
+# Test health endpoint
+curl http://<ALB_DNS>/healthz
+
+# Access PrestaShop in browser
+http://<ALB_DNS>
 ```
 
 ### Detailed Instructions
 
-For comprehensive deployment instructions, troubleshooting, and maintenance procedures, see the [Deployment Guide](docs/Deployment_Guide.md).
+**New Deployment Method (Recommended)**: See [Deployment Without Ansible](DEPLOYMENT_WITHOUT_ANSIBLE.md) for the simplified Terraform-only approach.
 
-**Automation Note**: New instances launched by Auto Scaling are automatically configured via user-data scripts. No manual Ansible execution is required for new instances.
+**Legacy Method**: See [Deployment Guide](docs/Deployment_Guide.md) if you prefer using Ansible for configuration management.
+
+**What Happens Automatically**:
+- ✅ System packages installed and updated
+- ✅ Nginx web server configured with PrestaShop optimizations
+- ✅ PHP 8.2 with all required extensions
+- ✅ PrestaShop downloaded and installed via Composer
+- ✅ Database connection configured and verified
+- ✅ CloudWatch monitoring and logging enabled
+- ✅ Health checks configured
+- ✅ Auto-scaling ready (new instances self-configure)
 
 
 
@@ -189,16 +213,31 @@ terraform plan
 terraform apply
 ```
 
-### Updating Application
+### Updating Application Configuration
 ```bash
-cd ansible
-ansible-playbook site.yml
+# Edit terraform/modules/ec2/user_data.sh
+# Then trigger instance replacement
+terraform taint aws_autoscaling_group.prestashop
+terraform apply
 ```
 
 ### Accessing Instances
 ```bash
-# Via AWS Systems Manager (recommended)
+# Via AWS Systems Manager (recommended - no SSH key needed)
 aws ssm start-session --target <instance-id>
+
+# Check deployment logs
+sudo tail -f /var/log/user-data.log
+```
+
+### Monitoring Deployment
+```bash
+# View CloudWatch logs
+aws logs tail /aws/ec2/greenleaf/prod/nginx/access --follow
+
+# Check service status via SSM
+aws ssm start-session --target <instance-id>
+systemctl status nginx php-fpm
 ```
 
 ## 📝 Deliverables Checklist
