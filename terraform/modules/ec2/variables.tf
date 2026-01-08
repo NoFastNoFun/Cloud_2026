@@ -8,6 +8,11 @@ variable "private_subnet_ids" {
   type        = list(string)
 }
 
+variable "public_subnet_ids" {
+  description = "IDs of the public subnets (for Ansible access)"
+  type        = list(string)
+}
+
 variable "security_group_id" {
   description = "ID of the EC2 security group"
   type        = string

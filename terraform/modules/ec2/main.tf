@@ -61,6 +61,25 @@ resource "aws_iam_role_policy" "ec2" {
           "ssm:GetParametersByPath"
         ]
         Resource = "arn:aws:ssm:*:*:parameter/${var.project_name}/${var.environment}/*"
+      },
+
+      # Allow Session Manager connectivity (so you can avoid SSH in the long run)
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:UpdateInstanceInformation",
+          "ssmmessages:CreateControlChannel",
+          "ssmmessages:CreateDataChannel",
+          "ssmmessages:OpenControlChannel",
+          "ssmmessages:OpenDataChannel",
+          "ec2messages:AcknowledgeMessage",
+          "ec2messages:DeleteMessage",
+          "ec2messages:FailMessage",
+          "ec2messages:GetEndpoint",
+          "ec2messages:GetMessages",
+          "ec2messages:SendReply"
+        ]
+        Resource = "*"
       }
     ]
   })
@@ -103,10 +122,16 @@ resource "aws_launch_template" "prestashop" {
   instance_type = var.instance_type
   key_name      = var.key_pair_name != "" ? var.key_pair_name : null
 
-  vpc_security_group_ids = [var.security_group_id]
-
   iam_instance_profile {
     name = aws_iam_instance_profile.ec2.name
+  }
+
+  network_interfaces {
+    # Keep public IP for now (your project uses public subnets for Ansible access).
+    # If you move ASG to private subnets + SSM, set this to false.
+    associate_public_ip_address = true
+    security_groups             = [var.security_group_id]
+    delete_on_termination       = true
   }
 
   user_data = local.user_data
@@ -158,11 +183,14 @@ data "aws_ami" "amazon_linux" {
 
 # Auto Scaling Group
 resource "aws_autoscaling_group" "prestashop" {
-  name                      = "${var.project_name}-${var.environment}-asg"
-  vpc_zone_identifier       = var.private_subnet_ids
-  target_group_arns         = [var.target_group_arn]
+  name                = "${var.project_name}-${var.environment}-asg"
+  vpc_zone_identifier = var.public_subnet_ids # kept public as in your current approach
+
+  target_group_arns = [var.target_group_arn]
+
+  # Keep ELB health checks, but give instances time to bootstrap (nginx/php/agent/etc.)
   health_check_type         = "ELB"
-  health_check_grace_period = 300
+  health_check_grace_period = 900
 
   min_size         = var.min_size
   max_size         = var.max_size
@@ -203,4 +231,3 @@ resource "aws_autoscaling_policy" "scale_down" {
   cooldown               = 300
   autoscaling_group_name = aws_autoscaling_group.prestashop.name
 }
-

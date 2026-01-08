@@ -1,3 +1,7 @@
+############################################
+# cloudwatch/main.tf (modifié)
+############################################
+
 # CloudWatch Alarm - High CPU Utilization
 resource "aws_cloudwatch_metric_alarm" "high_cpu" {
   alarm_name          = "${var.project_name}-${var.environment}-high-cpu"
@@ -9,7 +13,9 @@ resource "aws_cloudwatch_metric_alarm" "high_cpu" {
   statistic           = "Average"
   threshold           = 80
   alarm_description   = "This metric monitors EC2 CPU utilization"
-  alarm_actions       = []
+
+  # Optionnel: brancher une action (SNS ou scaling policy) via var.high_cpu_alarm_actions
+  alarm_actions = var.high_cpu_alarm_actions
 
   dimensions = {
     AutoScalingGroupName = var.autoscaling_group
@@ -31,7 +37,9 @@ resource "aws_cloudwatch_metric_alarm" "low_cpu" {
   statistic           = "Average"
   threshold           = 20
   alarm_description   = "This metric monitors EC2 CPU utilization for scale down"
-  alarm_actions       = []
+
+  # Optionnel: brancher une action (SNS ou scaling policy) via var.low_cpu_alarm_actions
+  alarm_actions = var.low_cpu_alarm_actions
 
   dimensions = {
     AutoScalingGroupName = var.autoscaling_group
@@ -47,13 +55,18 @@ resource "aws_cloudwatch_metric_alarm" "high_memory" {
   alarm_name          = "${var.project_name}-${var.environment}-high-memory"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
-  metric_name         = "MEM_USED_PERCENT"
-  namespace           = "${var.project_name}/${var.environment}"
-  period              = 300
-  statistic           = "Average"
-  threshold           = 85
-  alarm_description   = "This metric monitors EC2 memory utilization"
-  alarm_actions       = []
+
+  # IMPORTANT: aligné avec ton CloudWatch Agent (mem_used_percent)
+  metric_name = "mem_used_percent"
+
+  namespace         = "${var.project_name}/${var.environment}"
+  period            = 300
+  statistic         = "Average"
+  threshold         = 85
+  alarm_description = "This metric monitors EC2 memory utilization"
+
+  # Optionnel: brancher une action via var.high_memory_alarm_actions
+  alarm_actions = var.high_memory_alarm_actions
 
   tags = {
     Name = "${var.project_name}-${var.environment}-high-memory-alarm"
@@ -71,7 +84,8 @@ resource "aws_cloudwatch_metric_alarm" "rds_high_cpu" {
   statistic           = "Average"
   threshold           = 80
   alarm_description   = "This metric monitors RDS CPU utilization"
-  alarm_actions       = []
+
+  alarm_actions = var.rds_alarm_actions
 
   dimensions = {
     DBInstanceIdentifier = var.rds_instance_id
@@ -91,9 +105,10 @@ resource "aws_cloudwatch_metric_alarm" "rds_free_storage" {
   namespace           = "AWS/RDS"
   period              = 300
   statistic           = "Average"
-  threshold           = 5000000000  # 5 GB in bytes
+  threshold           = 5000000000
   alarm_description   = "This metric monitors RDS free storage space"
-  alarm_actions       = []
+
+  alarm_actions = var.rds_alarm_actions
 
   dimensions = {
     DBInstanceIdentifier = var.rds_instance_id
@@ -113,9 +128,10 @@ resource "aws_cloudwatch_metric_alarm" "rds_connections" {
   namespace           = "AWS/RDS"
   period              = 300
   statistic           = "Average"
-  threshold           = 400  # 80% of max_connections (500)
+  threshold           = 400
   alarm_description   = "This metric monitors RDS database connections"
-  alarm_actions       = []
+
+  alarm_actions = var.rds_alarm_actions
 
   dimensions = {
     DBInstanceIdentifier = var.rds_instance_id
@@ -154,3 +170,12 @@ resource "aws_cloudwatch_log_group" "prestashop_system" {
   }
 }
 
+# Ton user-data envoie aussi /var/log/user-data.log, donc il faut le log group correspondant
+resource "aws_cloudwatch_log_group" "user_data" {
+  name              = "/aws/ec2/${var.project_name}/${var.environment}/user-data"
+  retention_in_days = 3
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-user-data-logs"
+  }
+}

@@ -1,8 +1,8 @@
 ---
 - name: Configure PrestaShop E-commerce Platform
   hosts: all
-  become: yes
-  gather_facts: yes
+  become: true
+  gather_facts: true
 
   pre_tasks:
     - name: Update system packages
