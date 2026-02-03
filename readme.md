@@ -2,7 +2,7 @@
 
 ## 📖 Project Overview
 
-This project involves designing, deploying, and documenting a scalable cloud infrastructure on **AWS** for **GreenLeaf**, a startup specializing in eco-friendly products. The goal is to host the **Magento Open Source** e-commerce platform while ensuring high availability, security, and cost efficiency.
+This project involves designing, deploying, and documenting a scalable cloud infrastructure on **AWS** for **GreenLeaf**, a startup specializing in eco-friendly products. The goal is to host the **PrestaShop** e-commerce platform while ensuring high availability, security, and cost efficiency.
 
 This repository contains the **Infrastructure as Code (IaC)** and **Configuration Management** scripts required to provision the environment from scratch.
 
@@ -11,9 +11,9 @@ This repository contains the **Infrastructure as Code (IaC)** and **Configuratio
 The infrastructure is built to meet the following requirements:
 
 - **Cloud Provider**: Amazon Web Services (AWS)
-- **Application**: Magento Open Source 2.4.7
-- **Infrastructure as Code**: Terraform
-- **Configuration Management**: Ansible
+- **Application**: PrestaShop 8.x (latest stable)
+- **Infrastructure as Code**: Terraform (with automated user_data configuration)
+- **Configuration Management**: Built into user_data script
 - **Regions**: Multi-region deployment (Ireland primary, Frankfurt DR)
 
 **Key Features**:
@@ -39,25 +39,11 @@ The infrastructure is built to meet the following requirements:
 │       ├── vpc/                  # VPC, subnets, IGW, NAT gateways
 │       ├── security/             # Security groups
 │       ├── alb/                  # Application Load Balancer
-│       ├── ec2/                  # Launch template, Auto Scaling Group
+│       ├── ec2/                  # Launch template, Auto Scaling Group (includes user_data.sh)
 │       ├── rds/                  # RDS MySQL Multi-AZ
 │       ├── s3/                   # S3 buckets for static assets and backups
 │       ├── cloudfront/           # CloudFront distribution
 │       └── cloudwatch/           # CloudWatch alarms and log groups
-├── ansible/                      # Ansible playbooks and roles
-│   ├── ansible.cfg               # Ansible configuration
-│   ├── site.yml                  # Main playbook
-│   ├── inventory/
-│   │   └── aws_ec2.yml          # Dynamic AWS EC2 inventory
-│   ├── group_vars/
-│   │   └── all.yml              # Common variables
-│   └── roles/
-│       ├── common/              # System updates and basic packages
-│       ├── nginx/               # Nginx installation and configuration
-│       ├── php/                 # PHP 8.2 with Magento extensions
-│       ├── mysql-client/        # MySQL client installation
-│       ├── magento/             # Magento Open Source installation
-│       └── cloudwatch-agent/   # CloudWatch agent configuration
 ├── docs/                         # Project documentation
 │   ├── DAT.md                    # Technical Architecture Document
 │   ├── FinOps_Report.md          # Cost analysis and optimization strategies
@@ -73,8 +59,9 @@ Ensure you have the following tools installed:
 
 - [AWS CLI](https://aws.amazon.com/cli/) (v2.x) configured with appropriate credentials
 - [Terraform](https://www.terraform.io/) (>= 1.0)
-- [Ansible](https://www.ansible.com/) (>= 2.9)
 - Git
+
+**Note**: All configuration is fully automated via Terraform user_data scripts.
 
 ### Quick Start
 
@@ -91,44 +78,60 @@ cp terraform.tfvars.example terraform.tfvars
 # Edit terraform.tfvars with your values (especially passwords)
 ```
 
-3. **Provision Infrastructure (Terraform)**
+3. **Deploy Infrastructure (Single Command)**
 ```bash
 terraform init
-terraform plan
-terraform apply
+terraform plan -out=tfplan
+terraform apply tfplan
 ```
 
-**Note**: The deployment takes approximately 15-20 minutes. EC2 instances are automatically configured via user-data scripts.
+**That's it!** The deployment takes approximately 10-15 minutes. Everything is automated:
+- Infrastructure provisioning
+- Application installation (Nginx, PHP, PrestaShop)
+- Database configuration
+- Monitoring setup (CloudWatch)
+- Security hardening
 
 4. **Access the Application**
 ```bash
 # Get the ALB DNS name
-terraform output primary_alb_dns
+terraform output alb_dns_name
 
-# Access in browser
-# http://<ALB_DNS>
+# Test health endpoint
+curl http://<ALB_DNS>/healthz
+
+# Access PrestaShop in browser
+http://<ALB_DNS>
 ```
 
 ### Detailed Instructions
 
-For comprehensive deployment instructions, troubleshooting, and maintenance procedures, see the [Deployment Guide](docs/Deployment_Guide.md).
+See [Deployment Guide](docs/Deployment_Guide.md) for complete deployment instructions and troubleshooting.
 
-**Automation Note**: New instances launched by Auto Scaling are automatically configured via user-data scripts. No manual Ansible execution is required for new instances.
+**What Happens Automatically**:
+- ✅ System packages installed and updated
+- ✅ Nginx web server configured with PrestaShop optimizations
+- ✅ PHP 8.2 with all required extensions
+- ✅ PrestaShop downloaded and installed via Composer
+- ✅ Database connection configured and verified
+- ✅ CloudWatch monitoring and logging enabled
+- ✅ Health checks configured
+- ✅ Auto-scaling ready (new instances self-configure)
 
 
 
 ## 💰 FinOps & Budget
 
-**Estimated Monthly Cost**: ~$370/month (baseline)
+**Estimated Monthly Cost**: ~$75/month (optimized configuration)
 
-**Cost Breakdown**:
-- EC2 (2x t3.medium): ~$60/month
-- RDS (db.t3.medium Multi-AZ): ~$150/month
-- ALB (2 regions): ~$40/month
-- NAT Gateways: ~$65/month
-- Other services (EBS, S3, CloudFront, CloudWatch): ~$55/month
+**Cost Breakdown** (optimized):
+- EC2 (1x t3.small): ~$15/month
+- RDS (db.t3.small Single-AZ): ~$30/month
+- ALB (1 region): ~$20/month
+- NAT Instance: ~$5/month
+- Other services (EBS, S3, CloudFront, CloudWatch): ~$5/month
 
-**Note**: The $500/month budget mentioned in project requirements is hypothetical. Actual costs vary based on usage, traffic, and data storage.
+**Note**: The infrastructure is optimized to stay under $100/month. Actual costs vary based on usage, traffic, and data storage.
 
 **Optimization Strategy**: This project utilizes cost-effective resources and Auto Scaling to match demand. A full analysis of costs and optimization recommendations can be found in [FinOps Report](docs/FinOps_Report.md).
 
@@ -175,7 +178,7 @@ All project documentation is available in the `docs/` directory:
 ## 📊 Monitoring
 
 - **CloudWatch Alarms**: CPU, memory, disk usage, RDS metrics
-- **CloudWatch Logs**: Nginx access/error logs, Magento system logs
+- **CloudWatch Logs**: Nginx access/error logs, PrestaShop system logs
 - **Auto Scaling**: Automatic scaling based on CPU utilization
 - **Health Checks**: ALB health checks on `/health_check.php`
 
@@ -189,22 +192,37 @@ terraform plan
 terraform apply
 ```
 
-### Updating Application
+### Updating Application Configuration
 ```bash
-cd ansible
-ansible-playbook site.yml
+# Edit terraform/modules/ec2/user_data.sh
+# Then trigger instance replacement
+terraform taint aws_autoscaling_group.prestashop
+terraform apply
 ```
 
 ### Accessing Instances
 ```bash
-# Via AWS Systems Manager (recommended)
+# Via AWS Systems Manager (recommended - no SSH key needed)
 aws ssm start-session --target <instance-id>
+
+# Check deployment logs
+sudo tail -f /var/log/user-data.log
+```
+
+### Monitoring Deployment
+```bash
+# View CloudWatch logs
+aws logs tail /aws/ec2/greenleaf/prod/nginx/access --follow
+
+# Check service status via SSM
+aws ssm start-session --target <instance-id>
+systemctl status nginx php-fpm
 ```
 
 ## 📝 Deliverables Checklist
 
 - [x] Technical Architecture Document (DAT)
-- [x] Source Code (Terraform & Ansible)
+- [x] Source Code (Terraform IaC)
 - [x] FinOps Report
 - [x] Deployment & Exploitation Guide
 - [ ] Final Presentation (to be created)
@@ -222,3 +240,6 @@ This project is part of an academic assignment.
 **Project Duration**: 1 week  
 **Context**: Student Project  
 **Last Updated**: 2026-01-05
+
+pour créer une clé ssh 
+aws ec2 create-key-pair --key-name greenleaf-key --query 'KeyMaterial' --output text > greenleaf-key.pem

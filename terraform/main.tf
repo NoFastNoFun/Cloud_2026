@@ -24,9 +24,9 @@ module "primary_vpc" {
 module "primary_security" {
   source = "./modules/security"
 
-  vpc_id            = module.primary_vpc.vpc_id
-  project_name      = var.project_name
-  environment       = var.environment
+  vpc_id              = module.primary_vpc.vpc_id
+  project_name        = var.project_name
+  environment         = var.environment
   allowed_cidr_blocks = var.allowed_cidr_blocks
 }
 
@@ -34,7 +34,7 @@ module "primary_security" {
 module "primary_rds" {
   source = "./modules/rds"
 
-  vpc_id              = module.primary_vpc.vpc_id
+  vpc_id               = module.primary_vpc.vpc_id
   private_subnet_ids   = module.primary_vpc.private_subnet_ids
   security_group_id    = module.primary_security.rds_security_group_id
   project_name         = var.project_name
@@ -80,30 +80,30 @@ module "primary_alb" {
 module "primary_ec2" {
   source = "./modules/ec2"
 
-  vpc_id                = module.primary_vpc.vpc_id
-  private_subnet_ids    = module.primary_vpc.private_subnet_ids
-  security_group_id     = module.primary_security.ec2_security_group_id
-  target_group_arn      = module.primary_alb.target_group_arn
-  instance_type         = var.instance_type
-  min_size              = var.min_size
-  max_size              = var.max_size
-  desired_capacity      = var.desired_capacity
-  project_name          = var.project_name
-  environment           = var.environment
-  key_pair_name         = var.key_pair_name
-  db_endpoint           = module.primary_rds.db_endpoint
-  db_name               = var.db_name
-  db_username           = var.db_username
-  db_password           = var.db_password
-  s3_bucket_name        = module.primary_s3.bucket_name
-  cloudfront_url        = module.primary_cloudfront.distribution_url
-  magento_version       = var.magento_version
-  php_version           = var.php_version
-  magento_admin_username = var.magento_admin_username
-  magento_admin_password = var.magento_admin_password
-  magento_admin_email   = var.magento_admin_email
-  magento_base_url      = var.magento_base_url != "" ? var.magento_base_url : "http://${module.primary_alb.alb_dns_name}"
-  region                = var.primary_region
+  vpc_id                    = module.primary_vpc.vpc_id
+  private_subnet_ids        = module.primary_vpc.private_subnet_ids
+  public_subnet_ids         = module.primary_vpc.public_subnet_ids
+  security_group_id         = module.primary_security.ec2_security_group_id
+  target_group_arn          = module.primary_alb.target_group_arn
+  instance_type             = var.instance_type
+  min_size                  = var.min_size
+  max_size                  = var.max_size
+  desired_capacity          = var.desired_capacity
+  project_name              = var.project_name
+  environment               = var.environment
+  key_pair_name             = var.key_pair_name
+  db_endpoint               = module.primary_rds.db_endpoint
+  db_name                   = var.db_name
+  db_username               = var.db_username
+  db_password               = var.db_password
+  s3_bucket_name            = module.primary_s3.bucket_name
+  cloudfront_url            = module.primary_cloudfront.distribution_url
+  prestashop_version        = var.prestashop_version
+  php_version               = var.php_version
+  prestashop_admin_email    = var.prestashop_admin_email
+  prestashop_admin_password = var.prestashop_admin_password
+  prestashop_domain         = var.prestashop_domain != "" ? var.prestashop_domain : module.primary_alb.alb_dns_name
+  region                    = var.primary_region
 }
 
 # Primary Region - CloudWatch Module
@@ -126,7 +126,7 @@ module "dr_vpc" {
   }
 
   region             = var.dr_region
-  vpc_cidr           = "10.1.0.0/16"  # Different CIDR for DR
+  vpc_cidr           = "10.1.0.0/16" # Different CIDR for DR
   availability_zones = length(var.availability_zones) > 0 ? var.availability_zones : slice(data.aws_availability_zones.dr[0].names, 0, 2)
   project_name       = var.project_name
   environment        = "${var.environment}-dr"
@@ -141,9 +141,9 @@ module "dr_security" {
     aws = aws.dr
   }
 
-  vpc_id            = module.dr_vpc[0].vpc_id
-  project_name      = var.project_name
-  environment       = "${var.environment}-dr"
+  vpc_id              = module.dr_vpc[0].vpc_id
+  project_name        = var.project_name
+  environment         = "${var.environment}-dr"
   allowed_cidr_blocks = var.allowed_cidr_blocks
 }
 
@@ -172,29 +172,29 @@ module "dr_ec2" {
     aws = aws.dr
   }
 
-  vpc_id                = module.dr_vpc[0].vpc_id
-  private_subnet_ids    = module.dr_vpc[0].private_subnet_ids
-  security_group_id     = module.dr_security[0].ec2_security_group_id
-  target_group_arn      = module.dr_alb[0].target_group_arn
-  instance_type         = var.instance_type
-  min_size              = 0  # DR starts with 0 instances
-  max_size              = var.max_size
-  desired_capacity      = 0  # DR starts with 0 instances
-  project_name          = var.project_name
-  environment           = "${var.environment}-dr"
-  key_pair_name         = var.key_pair_name
-  db_endpoint           = module.primary_rds.db_endpoint  # DR can use primary DB or have its own
-  db_name               = var.db_name
-  db_username           = var.db_username
-  db_password           = var.db_password
-  s3_bucket_name        = module.primary_s3.bucket_name  # Can share S3 or have separate
-  cloudfront_url        = module.primary_cloudfront.distribution_url
-  magento_version       = var.magento_version
-  php_version           = var.php_version
-  magento_admin_username = var.magento_admin_username
-  magento_admin_password = var.magento_admin_password
-  magento_admin_email   = var.magento_admin_email
-  magento_base_url      = var.magento_base_url != "" ? var.magento_base_url : "http://${module.dr_alb[0].alb_dns_name}"
-  region                = var.dr_region
+  vpc_id                    = module.dr_vpc[0].vpc_id
+  private_subnet_ids        = module.dr_vpc[0].private_subnet_ids
+  public_subnet_ids         = module.dr_vpc[0].public_subnet_ids
+  security_group_id         = module.dr_security[0].ec2_security_group_id
+  target_group_arn          = module.dr_alb[0].target_group_arn
+  instance_type             = var.instance_type
+  min_size                  = 0 # DR starts with 0 instances
+  max_size                  = var.max_size
+  desired_capacity          = 0 # DR starts with 0 instances
+  project_name              = var.project_name
+  environment               = "${var.environment}-dr"
+  key_pair_name             = var.key_pair_name
+  db_endpoint               = module.primary_rds.db_endpoint # DR can use primary DB or have its own
+  db_name                   = var.db_name
+  db_username               = var.db_username
+  db_password               = var.db_password
+  s3_bucket_name            = module.primary_s3.bucket_name # Can share S3 or have separate
+  cloudfront_url            = module.primary_cloudfront.distribution_url
+  prestashop_version        = var.prestashop_version
+  php_version               = var.php_version
+  prestashop_admin_email    = var.prestashop_admin_email
+  prestashop_admin_password = var.prestashop_admin_password
+  prestashop_domain         = var.prestashop_domain != "" ? var.prestashop_domain : module.dr_alb[0].alb_dns_name
+  region                    = var.dr_region
 }
 

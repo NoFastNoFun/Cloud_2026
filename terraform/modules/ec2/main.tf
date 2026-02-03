@@ -61,6 +61,25 @@ resource "aws_iam_role_policy" "ec2" {
           "ssm:GetParametersByPath"
         ]
         Resource = "arn:aws:ssm:*:*:parameter/${var.project_name}/${var.environment}/*"
+      },
+
+      # Allow Session Manager connectivity (so you can avoid SSH in the long run)
+      {
+        Effect = "Allow"
+        Action = [
+          "ssm:UpdateInstanceInformation",
+          "ssmmessages:CreateControlChannel",
+          "ssmmessages:CreateDataChannel",
+          "ssmmessages:OpenControlChannel",
+          "ssmmessages:OpenDataChannel",
+          "ec2messages:AcknowledgeMessage",
+          "ec2messages:DeleteMessage",
+          "ec2messages:FailMessage",
+          "ec2messages:GetEndpoint",
+          "ec2messages:GetMessages",
+          "ec2messages:SendReply"
+        ]
+        Resource = "*"
       }
     ]
   })
@@ -79,35 +98,40 @@ resource "aws_iam_instance_profile" "ec2" {
 # User Data Script
 locals {
   user_data = base64encode(templatefile("${path.module}/user_data.sh", {
-    db_endpoint           = var.db_endpoint
-    db_name               = var.db_name
-    db_username           = var.db_username
-    db_password           = var.db_password
-    s3_bucket_name        = var.s3_bucket_name
-    cloudfront_url        = var.cloudfront_url
-    magento_version       = var.magento_version
-    php_version           = var.php_version
-    magento_admin_username = var.magento_admin_username
-    magento_admin_password = var.magento_admin_password
-    magento_admin_email   = var.magento_admin_email
-    magento_base_url      = var.magento_base_url
-    project_name          = var.project_name
-    environment           = var.environment
-    region                = var.region
+    db_endpoint               = var.db_endpoint
+    db_name                   = var.db_name
+    db_username               = var.db_username
+    db_password               = var.db_password
+    s3_bucket_name            = var.s3_bucket_name
+    cloudfront_url            = var.cloudfront_url
+    prestashop_version        = var.prestashop_version
+    php_version               = var.php_version
+    prestashop_admin_email    = var.prestashop_admin_email
+    prestashop_admin_password = var.prestashop_admin_password
+    prestashop_domain         = var.prestashop_domain
+    project_name              = var.project_name
+    environment               = var.environment
+    region                    = var.region
   }))
 }
 
 # Launch Template
-resource "aws_launch_template" "magento" {
+resource "aws_launch_template" "prestashop" {
   name_prefix   = "${var.project_name}-${var.environment}-"
   image_id      = data.aws_ami.amazon_linux.id
   instance_type = var.instance_type
   key_name      = var.key_pair_name != "" ? var.key_pair_name : null
 
-  vpc_security_group_ids = [var.security_group_id]
-
   iam_instance_profile {
     name = aws_iam_instance_profile.ec2.name
+  }
+
+  network_interfaces {
+    # Keep public IP for now (your project uses public subnets for Ansible access).
+    # If you move ASG to private subnets + SSM, set this to false.
+    associate_public_ip_address = true
+    security_groups             = [var.security_group_id]
+    delete_on_termination       = true
   }
 
   user_data = local.user_data
@@ -115,7 +139,7 @@ resource "aws_launch_template" "magento" {
   block_device_mappings {
     device_name = "/dev/xvda"
     ebs {
-      volume_size           = 20
+      volume_size           = 30
       volume_type           = "gp3"
       delete_on_termination = true
       encrypted             = true
@@ -126,13 +150,13 @@ resource "aws_launch_template" "magento" {
     http_endpoint               = "enabled"
     http_tokens                 = "required"
     http_put_response_hop_limit = 1
-    instance_metadata_tags     = "enabled"
+    instance_metadata_tags      = "enabled"
   }
 
   tag_specifications {
     resource_type = "instance"
     tags = {
-      Name = "${var.project_name}-${var.environment}-magento"
+      Name = "${var.project_name}-${var.environment}-prestashop"
     }
   }
 
@@ -158,25 +182,28 @@ data "aws_ami" "amazon_linux" {
 }
 
 # Auto Scaling Group
-resource "aws_autoscaling_group" "magento" {
+resource "aws_autoscaling_group" "prestashop" {
   name                = "${var.project_name}-${var.environment}-asg"
-  vpc_zone_identifier = var.private_subnet_ids
-  target_group_arns   = [var.target_group_arn]
-  health_check_type   = "ELB"
-  health_check_grace_period = 300
+  vpc_zone_identifier = var.public_subnet_ids # kept public as in your current approach
+
+  target_group_arns = [var.target_group_arn]
+
+  # Keep ELB health checks, but give instances time to bootstrap (nginx/php/agent/etc.)
+  health_check_type         = "ELB"
+  health_check_grace_period = 900
 
   min_size         = var.min_size
   max_size         = var.max_size
   desired_capacity = var.desired_capacity
 
   launch_template {
-    id      = aws_launch_template.magento.id
+    id      = aws_launch_template.prestashop.id
     version = "$Latest"
   }
 
   tag {
     key                 = "Name"
-    value               = "${var.project_name}-${var.environment}-magento"
+    value               = "${var.project_name}-${var.environment}-prestashop"
     propagate_at_launch = true
   }
 
@@ -194,7 +221,7 @@ resource "aws_autoscaling_policy" "scale_up" {
   scaling_adjustment     = 1
   adjustment_type        = "ChangeInCapacity"
   cooldown               = 300
-  autoscaling_group_name = aws_autoscaling_group.magento.name
+  autoscaling_group_name = aws_autoscaling_group.prestashop.name
 }
 
 resource "aws_autoscaling_policy" "scale_down" {
@@ -202,6 +229,5 @@ resource "aws_autoscaling_policy" "scale_down" {
   scaling_adjustment     = -1
   adjustment_type        = "ChangeInCapacity"
   cooldown               = 300
-  autoscaling_group_name = aws_autoscaling_group.magento.name
+  autoscaling_group_name = aws_autoscaling_group.prestashop.name
 }
-

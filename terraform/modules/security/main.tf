@@ -55,6 +55,15 @@ resource "aws_security_group" "ec2" {
     security_groups = [aws_security_group.alb.id]
   }
 
+  # IMPORTANT: ne jamais laisser 22 ouvert au monde
+  ingress {
+    description = "SSH for maintenance (restricted)"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = var.ssh_allowed_cidr_blocks
+  }
+
   egress {
     description = "Allow all outbound"
     from_port   = 0
@@ -94,4 +103,3 @@ resource "aws_security_group" "rds" {
     Name = "${var.project_name}-${var.environment}-rds-sg"
   }
 }
-

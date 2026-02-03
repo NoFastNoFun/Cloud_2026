@@ -1,9 +1,6 @@
 # Guide de Déploiement et d'Exploitation
-## GreenLeaf E-commerce Platform - AWS Infrastructure
 
-**Version:** 1.0  
-**Date:** 2026-01-05
-**Auteur:** Équipe GreenLeaf
+**Date:** 2026-02-03
 
 ---
 
@@ -12,11 +9,10 @@
 1. [Prérequis](#prérequis)
 2. [Configuration Initiale](#configuration-initiale)
 3. [Déploiement de l'Infrastructure](#déploiement-de-linfrastructure)
-4. [Configuration de l'Application](#configuration-de-lapplication)
-5. [Vérification et Tests](#vérification-et-tests)
-6. [Maintenance](#maintenance)
-7. [Dépannage](#dépannage)
-8. [Optimisations de Coût](#optimisations-de-coût)
+4. [Vérification et Tests](#vérification-et-tests)
+5. [Maintenance](#maintenance)
+6. [Dépannage](#dépannage)
+7. [Optimisations de Coût](#optimisations-de-coût)
 
 ---
 
@@ -46,16 +42,7 @@
    terraform version
    ```
 
-3. **Ansible** (version >= 2.9)
-   ```bash
-   # Installation (via pip)
-   pip3 install ansible boto3
-   
-   # Vérification
-   ansible --version
-   ```
-
-4. **Git**
+3. **Git**
    ```bash
    # Installation
    sudo yum install git -y  # Amazon Linux
@@ -94,29 +81,9 @@
 ### 1. Cloner le Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/NoFastNoFun/Cloud_2026
 cd Cloud_2026
 ```
-
-### 1.1. Comprendre les Optimisations de Coût
-
-Cette infrastructure a été optimisée pour réduire les coûts de ~$370/mois à ~$75/mois. Les optimisations incluent :
-
-- **NAT Instance** au lieu de NAT Gateways (économie ~$50/mois)
-- **RDS Single-AZ** au lieu de Multi-AZ (économie ~$75/mois)
-- **Instances plus petites** : t3.small et db.t3.small (économie ~$45/mois)
-- **1 instance EC2 minimum** au lieu de 2 (économie ~$15/mois)
-- **DR région désactivée** par défaut (économie ~$20/mois)
-- **Rétentions réduites** : backups (3 jours), logs (3 jours), S3 (30 jours)
-- **Performance Insights désactivé** (économie ~$5/mois)
-- **S3 versioning désactivé** pour les assets statiques
-- **EBS volumes réduits** : 20GB au lieu de 30GB
-
-**Note** : Si vous avez besoin de haute disponibilité, vous pouvez :
-- Activer `enable_dr = true` pour la région DR (~$20/mois)
-- Changer RDS en Multi-AZ dans `modules/rds/main.tf` (~$75/mois)
-- Augmenter `min_size` et `desired_capacity` à 2 (~$15/mois)
-- Utiliser des instances plus grandes si nécessaire
 
 ### 2. Configurer les Variables Terraform
 
@@ -146,16 +113,16 @@ desired_capacity = 1              # Réduit de 2 pour économiser
 db_instance_class    = "db.t3.small"  # Réduit de db.t3.medium pour économiser
 db_allocated_storage = 50             # Réduit de 100GB pour économiser
 db_engine_version    = "8.0"
-db_name              = "magento"
+db_name              = "prestashop"
 db_username          = "admin"
 db_password          = "VOTRE_MOT_DE_PASSE_SECURISE"  # ⚠️ CHANGEZ-MOI
 
-# Magento
-magento_version         = "2.4.7"
+# PrestaShop
+prestashop_version      = "8.*"  # Latest PrestaShop 8.x
 php_version             = "8.2"
-magento_admin_username  = "admin"
-magento_admin_password  = "VOTRE_MOT_DE_PASSE_SECURISE"  # ⚠️ CHANGEZ-MOI
-magento_admin_email     = "admin@greenleaf.example.com"
+prestashop_admin_email  = "admin@greenleaf.example.com"
+prestashop_admin_password = "VOTRE_MOT_DE_PASSE_SECURISE"  # ⚠️ CHANGEZ-MOI
+prestashop_domain        = ""  # Will be set to ALB DNS if empty
 
 # Security
 allowed_cidr_blocks = ["0.0.0.0/0"]  # Restreindre en production
@@ -167,7 +134,7 @@ enable_dr = false  # Mettre à true si la récupération d'urgence est requise (
 
 **⚠️ IMPORTANT - Variables à modifier obligatoirement :**
 - `db_password` : Définir un mot de passe sécurisé pour la base de données
-- `magento_admin_password` : Définir un mot de passe sécurisé pour l'admin Magento
+- `prestashop_admin_password` : Définir un mot de passe sécurisé pour l'admin PrestaShop
 - `key_pair_name` : Optionnel, mais recommandé pour l'accès SSH
 
 ### 3. Initialiser Terraform
@@ -194,7 +161,7 @@ Avant de déployer, notez ces points importants :
 
 5. **Variables Obligatoires à Modifier** :
    - `db_password` : DOIT être changé
-   - `magento_admin_password` : DOIT être changé
+   - `prestashop_admin_password` : DOIT être changé
    - `key_pair_name` : Recommandé pour l'accès SSH
 
 6. **Coûts Estimés** : ~$75/mois avec la configuration optimisée par défaut.
@@ -215,14 +182,6 @@ Vérifier que le plan correspond à vos attentes. Vous devriez voir :
 - CloudFront Distribution
 - CloudWatch Alarms
 
-**Note sur les optimisations de coût :**
-- NAT Instance au lieu de NAT Gateways : économie de ~$50/mois
-- RDS Single-AZ au lieu de Multi-AZ : économie de ~$75/mois
-- Instance EC2 t3.small au lieu de t3.medium : économie de ~$15/mois
-- 1 instance EC2 minimum au lieu de 2 : économie de ~$15/mois
-- DR région désactivée par défaut : économie de ~$20/mois
-- Coût total estimé : ~$75/mois (au lieu de ~$370/mois)
-
 ### Étape 2 : Déploiement
 
 ```bash
@@ -231,7 +190,9 @@ terraform apply
 
 Terraform va demander confirmation. Tapez `yes` pour continuer.
 
-**Durée estimée : 15-20 minutes**
+**Durée estimée : 10-15 minutes**
+
+L'infrastructure se configure automatiquement via user_data. Aucune configuration manuelle n'est nécessaire.
 
 ### Étape 3 : Récupérer les Outputs
 
@@ -246,16 +207,16 @@ Noter particulièrement :
 - `primary_rds_endpoint` : Endpoint de la base de données
 - `primary_cloudfront_url` : URL CloudFront
 
-### Étape 4 : Mettre à Jour la Configuration Magento
+### Étape 4 : Mettre à Jour la Configuration PrestaShop
 
-Si `magento_base_url` n'était pas défini, mettre à jour :
+Si `prestashop_domain` n'était pas défini, mettre à jour :
 
 ```bash
 # Récupérer l'ALB DNS
 ALB_DNS=$(terraform output -raw primary_alb_dns)
 
 # Mettre à jour terraform.tfvars
-# magento_base_url = "http://${ALB_DNS}"
+# prestashop_domain = "${ALB_DNS}"
 ```
 
 Puis re-appliquer (seulement les ressources concernées seront mises à jour) :
@@ -264,42 +225,12 @@ Puis re-appliquer (seulement les ressources concernées seront mises à jour) :
 terraform apply
 ```
 
----
-
-## Configuration de l'Application
-
-### Option 1 : Configuration Automatique (User-Data)
-
-Les instances EC2 sont automatiquement configurées via le script user-data lors du lancement. Cela inclut :
-- Installation de Nginx, PHP, MySQL client
-- Installation et configuration de Magento
-- Configuration de CloudWatch Agent
-
-**Vérification** : Attendre 10-15 minutes après le déploiement pour que l'installation soit complète.
-
-### Option 2 : Configuration via Ansible (Recommandé pour Maintenance)
-
-Si vous souhaitez reconfigurer ou mettre à jour :
-
-1. **Configurer l'inventory Ansible**
-
-L'inventory dynamique AWS EC2 est déjà configuré dans `ansible/inventory/aws_ec2.yml`.
-
-2. **Mettre à jour les variables**
-
-Éditer `ansible/group_vars/all.yml` avec les valeurs correctes :
-
-```yaml
-db_host: "VOTRE_RDS_ENDPOINT"
-db_password: "VOTRE_MOT_DE_PASSE"
-magento_base_url: "http://VOTRE_ALB_DNS"
-```
-
-3. **Exécuter le playbook Ansible**
+Les instances s'installent et se configurent automatiquement via user_data. Monitorer via :
 
 ```bash
-cd ansible
-ansible-playbook site.yml
+# Voir les logs d'installation
+aws ssm start-session --target <instance-id>
+sudo tail -f /var/log/user-data.log
 ```
 
 ---
@@ -310,7 +241,7 @@ ansible-playbook site.yml
 
 ```bash
 # Vérifier les instances EC2
-aws ec2 describe-instances --filters "Name=tag:Project,Values=GreenLeaf" --query 'Reservations[*].Instances[*].[InstanceId,State.Name,PrivateIpAddress]' --output table
+aws ec2 describe-instances --filters "Name=tag:Project,Values=GreenLeaf" --query 'Reservations[*].Instances[*].[InstanceId,State.Name,PrivateIpAddress,Tags[?Key==`Name`].Value|[0]]' --output table
 
 # Vérifier l'ALB
 aws elbv2 describe-load-balancers --query 'LoadBalancers[*].[LoadBalancerName,DNSName,State.Code]' --output table
@@ -336,17 +267,25 @@ aws autoscaling describe-auto-scaling-groups --query 'AutoScalingGroups[*].[Auto
    # Devrait retourner "OK"
    ```
 
-3. **Accéder à l'interface Magento**
+3. **Accéder à l'interface PrestaShop**
    - Ouvrir un navigateur : `http://${ALB_DNS}`
-   - Vérifier que la page Magento s'affiche
+   - Vérifier que la page PrestaShop s'affiche
    - Accéder à l'admin : `http://${ALB_DNS}/admin`
 
 ### 3. Tester l'Auto Scaling
 
 ```bash
+# Obtenir le nom de l'Auto Scaling Group (remplacez greenleaf et prod par vos valeurs si différentes)
+ASG_NAME="greenleaf-prod-asg"
+
+# Ou récupérer dynamiquement
+ASG_NAME=$(aws autoscaling describe-auto-scaling-groups \
+  --query 'AutoScalingGroups[?contains(AutoScalingGroupName, `greenleaf`) && contains(AutoScalingGroupName, `prod`)].AutoScalingGroupName' \
+  --output text | head -1)
+
 # Augmenter manuellement la capacité désirée
 aws autoscaling set-desired-capacity \
-  --auto-scaling-group-name greenleaf-prod-asg \
+  --auto-scaling-group-name $ASG_NAME \
   --desired-capacity 3
 
 # Vérifier que de nouvelles instances sont lancées
@@ -354,7 +293,7 @@ aws ec2 describe-instances --filters "Name=tag:Project,Values=GreenLeaf" --query
 
 # Remettre à 1 (valeur optimisée par défaut)
 aws autoscaling set-desired-capacity \
-  --auto-scaling-group-name greenleaf-prod-asg \
+  --auto-scaling-group-name $ASG_NAME \
   --desired-capacity 1
 ```
 
@@ -374,23 +313,27 @@ aws logs describe-log-groups --log-group-name-prefix /aws/ec2/greenleaf --query 
 
 ### Mises à Jour de l'Infrastructure
 
-1. **Modifier la configuration Terraform**
-   ```bash
-   # Éditer les fichiers .tf ou terraform.tfvars
-   vim terraform/variables.tf
-   
-   # Planifier les changements
-   terraform plan
-   
-   # Appliquer
-   terraform apply
-   ```
+```bash
+# Éditer les fichiers .tf ou terraform.tfvars
+vim terraform/variables.tf
 
-2. **Mises à Jour de l'Application (Ansible)**
-   ```bash
-   cd ansible
-   ansible-playbook site.yml
-   ```
+# Planifier les changements
+terraform plan
+
+# Appliquer
+terraform apply
+```
+
+### Mises à Jour de la Configuration Application
+
+```bash
+# Éditer le script user_data
+vim terraform/modules/ec2/user_data.sh
+
+# Forcer le remplacement des instances
+terraform taint aws_autoscaling_group.prestashop
+terraform apply
+```
 
 ### Sauvegardes
 
@@ -400,9 +343,17 @@ aws logs describe-log-groups --log-group-name-prefix /aws/ec2/greenleaf --query 
 - Multi-AZ : Désactivé (Single-AZ pour économiser ~$75/mois)
 - Snapshots manuels :
   ```bash
+  # Obtenir l'identifiant de l'instance RDS (remplacez greenleaf et prod par vos valeurs si différentes)
+  DB_IDENTIFIER="greenleaf-prod-db"
+  
+  # Ou récupérer dynamiquement
+  DB_IDENTIFIER=$(aws rds describe-db-instances \
+    --query 'DBInstances[?contains(DBInstanceIdentifier, `greenleaf`) && contains(DBInstanceIdentifier, `prod`)].DBInstanceIdentifier' \
+    --output text | head -1)
+  
   aws rds create-db-snapshot \
-    --db-instance-identifier greenleaf-prod-db \
-    --db-snapshot-identifier greenleaf-prod-snapshot-$(date +%Y%m%d)
+    --db-instance-identifier $DB_IDENTIFIER \
+    --db-snapshot-identifier ${DB_IDENTIFIER}-snapshot-$(date +%Y%m%d)
   ```
 
 **S3 Backups**
@@ -444,7 +395,7 @@ aws ssm start-session --target <instance-id>
 
 # Vérifier les logs
 sudo tail -f /var/log/cloud-init-output.log
-sudo tail -f /var/log/magento-install.log
+sudo tail -f /var/log/prestashop-install.log
 ```
 
 **Solutions**
@@ -452,7 +403,7 @@ sudo tail -f /var/log/magento-install.log
 - Vérifier les IAM Roles
 - Vérifier la connectivité RDS depuis les instances
 
-### Problème : Magento ne s'installe pas
+### Problème : PrestaShop ne s'installe pas
 
 **Vérifications**
 ```bash
@@ -462,17 +413,40 @@ aws ssm start-session --target <instance-id>
 # Vérifier PHP
 php -v
 
+# Vérifier Composer
+composer --version
+
 # Vérifier la connexion à la base de données
 mysql -h <RDS_ENDPOINT> -u admin -p
 
 # Vérifier les permissions
-ls -la /var/www/magento
+ls -la /var/www/prestashop
 ```
 
 **Solutions**
-- Vérifier les credentials RDS
-- Vérifier les permissions des fichiers Magento
-- Ré-exécuter l'installation manuellement si nécessaire
+- Vérifier les credentials RDS (db_host, db_name, db_user, db_password)
+- Vérifier les permissions des fichiers PrestaShop (var/, img/, upload/, download/)
+- Vérifier que Composer est installé correctement : `composer --version`
+- Vérifier que le répertoire /var/www/prestashop existe et appartient à nginx:nginx
+- Vérifier les logs d'installation : `/var/log/prestashop-install.log`
+- Si l'installation échoue, se connecter à l'instance et exécuter manuellement :
+  ```bash
+  cd /var/www/prestashop
+  sudo -u nginx php install/index_cli.php \
+    --domain=<DOMAIN> \
+    --db_server=<RDS_ENDPOINT> \
+    --db_name=prestashop \
+    --db_user=admin \
+    --db_password=<PASSWORD> \
+    --email=<ADMIN_EMAIL> \
+    --password=<ADMIN_PASSWORD> \
+    --firstname=Admin \
+    --lastname=User \
+    --language=en \
+    --country=us \
+    --newsletter=0 \
+    --send_email=0
+  ```
 
 ### Problème : ALB ne route pas le trafic
 
@@ -494,8 +468,13 @@ aws elbv2 describe-target-health --target-group-arn <target-group-arn>
 
 **Vérifications**
 ```bash
+# Obtenir l'identifiant de l'instance RDS
+DB_IDENTIFIER=$(aws rds describe-db-instances \
+  --query 'DBInstances[?contains(DBInstanceIdentifier, `greenleaf`) && contains(DBInstanceIdentifier, `prod`)].DBInstanceIdentifier' \
+  --output text | head -1)
+
 # Vérifier le statut RDS
-aws rds describe-db-instances --db-instance-identifier greenleaf-prod-db
+aws rds describe-db-instances --db-instance-identifier $DB_IDENTIFIER
 
 # Vérifier les Security Groups
 aws ec2 describe-security-groups --filters "Name=tag:Name,Values=greenleaf-prod-rds-sg"
@@ -510,9 +489,9 @@ aws ec2 describe-security-groups --filters "Name=tag:Name,Values=greenleaf-prod-
 
 **Vérifications**
 ```bash
-# Vérifier les coûts par service
+# Vérifier les coûts par service (remplacez les dates par la période souhaitée)
 aws ce get-cost-and-usage \
-  --time-period Start=2024-01-01,End=2024-01-31 \
+  --time-period Start=$(date -d '1 month ago' +%Y-%m-01),End=$(date +%Y-%m-%d) \
   --granularity MONTHLY \
   --metrics BlendedCost \
   --group-by Type=DIMENSION,Key=SERVICE
@@ -559,21 +538,24 @@ terraform validate
 # Lister toutes les ressources taguées
 aws resourcegroupstaggingapi get-resources --tag-filters Key=Project,Values=GreenLeaf
 
-# Voir les coûts
-aws ce get-cost-and-usage --time-period Start=2024-01-01,End=2024-01-31 --granularity MONTHLY --metrics BlendedCost
+# Voir les coûts (remplacez les dates par la période souhaitée)
+aws ce get-cost-and-usage \
+  --time-period Start=$(date -d '1 month ago' +%Y-%m-01),End=$(date +%Y-%m-%d) \
+  --granularity MONTHLY \
+  --metrics BlendedCost
 ```
 
-### Ansible
+### SSM (Accès aux Instances)
 
 ```bash
-# Tester la connexion
-ansible all -m ping
+# Se connecter à une instance
+aws ssm start-session --target <instance-id>
 
-# Voir les hosts
-ansible-inventory --list
+# Voir les logs de déploiement
+sudo cat /var/log/user-data.log
 
-# Exécuter une commande sur tous les hosts
-ansible all -m shell -a "df -h"
+# Vérifier les services
+systemctl status nginx php-fpm amazon-cloudwatch-agent
 ```
 
 ---
@@ -671,7 +653,7 @@ aws ce get-cost-and-usage \
 - [Documentation AWS](https://docs.aws.amazon.com/)
 - [Documentation Terraform](https://www.terraform.io/docs)
 - [Documentation Ansible](https://docs.ansible.com/)
-- [Documentation Magento](https://devdocs.magento.com/)
+- [Documentation PrestaShop](https://devdocs.prestashop.com/)
 
 ### Contacts
 
@@ -681,31 +663,6 @@ Pour toute question ou problème :
 - Contacter l'équipe DevOps
 
 ---
-
-## Optimisations de Coût
-
-### Configuration Actuelle (Optimisée)
-
-L'infrastructure a été optimisée pour réduire les coûts de **~$370/mois à ~$75/mois** (80% de réduction).
-
-#### Optimisations Implémentées
-
-| Optimisation | Économie | Impact |
-|-------------|---------|--------|
-| NAT Instance au lieu de NAT Gateways | ~$50/mois | Moins de disponibilité, mais 80% moins cher |
-| RDS Single-AZ au lieu de Multi-AZ | ~$75/mois | Pas de failover automatique |
-| Instance EC2 t3.small au lieu de t3.medium | ~$15/mois | Moins de CPU/RAM |
-| RDS db.t3.small au lieu de db.t3.medium | ~$30/mois | Moins de CPU/RAM |
-| 1 instance EC2 minimum au lieu de 2 | ~$15/mois | Pas de redondance au démarrage |
-| DR région désactivée | ~$20/mois | Pas de récupération d'urgence |
-| Performance Insights désactivé | ~$5/mois | Moins de monitoring détaillé |
-| Backup retention 3 jours au lieu de 7 | ~$2/mois | Moins de backups disponibles |
-| CloudWatch logs 3 jours au lieu de 7 | ~$2/mois | Moins d'historique de logs |
-| S3 backup retention 30 jours au lieu de 90 | ~$1/mois | Moins de backups S3 |
-| EBS volumes 20GB au lieu de 30GB | ~$1.60/mois | Moins d'espace disque |
-| S3 versioning désactivé | Variable | Pas d'historique de versions |
-
-**Total économisé : ~$295/mois**
 
 ### Activer la Haute Disponibilité (Optionnel)
 
@@ -768,6 +725,5 @@ aws ce get-cost-and-usage \
 
 ---
 
-**Document Version:** 1.0  
-**Dernière Mise à Jour:** 2024
-
+**Document Version:** 2.0  
+**Dernière Mise à Jour:** 2026-01-08  

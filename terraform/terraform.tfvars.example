@@ -16,17 +16,16 @@ desired_capacity = 1              # Reduced from 2 for cost savings
 db_instance_class    = "db.t3.small"  # Reduced from db.t3.medium for cost savings
 db_allocated_storage = 50             # Reduced from 100GB for cost savings
 db_engine_version    = "8.0"
-db_name              = "magento"
+db_name              = "prestashop"
 db_username          = "admin"
 db_password          = "CHANGE_ME_SECURE_PASSWORD"
 
-# Magento Configuration
-magento_version      = "2.4.7"
+# PrestaShop Configuration
+prestashop_version   = "8.*"  # Latest PrestaShop 8.x
 php_version          = "8.2"
-magento_admin_username = "admin"
-magento_admin_password = "CHANGE_ME_SECURE_PASSWORD"
-magento_admin_email    = "admin@greenleaf.example.com"
-magento_base_url       = ""  # Will be set to ALB DNS if empty
+prestashop_admin_email    = "admin@greenleaf.example.com"
+prestashop_admin_password = "CHANGE_ME_SECURE_PASSWORD"
+prestashop_domain         = ""  # Will be set to ALB DNS if empty
 
 # Security
 allowed_cidr_blocks = ["0.0.0.0/0"]  # Restrict in production
