@@ -1,8 +1,6 @@
 # Guide de Déploiement et d'Exploitation
 
-**Date:** 2026-01-08
-
-> **NOUVEAU:** Le déploiement ne nécessite plus Ansible. Tout est automatisé via Terraform et user_data.
+**Date:** 2026-02-03
 
 ---
 

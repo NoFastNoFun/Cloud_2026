@@ -1,9 +1,0 @@
----
-galaxy_info:
-  author: GreenLeaf Team
-  description: MySQL client installation
-  license: MIT
-  min_ansible_version: 2.9
-
-dependencies: []
-

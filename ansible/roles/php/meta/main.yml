@@ -1,9 +1,0 @@
----
-galaxy_info:
-  author: GreenLeaf Team
-  description: PHP installation and configuration for PrestaShop
-  license: MIT
-  min_ansible_version: 2.9
-
-dependencies: []
-

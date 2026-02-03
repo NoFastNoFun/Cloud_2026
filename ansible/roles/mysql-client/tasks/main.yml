@@ -1,6 +1,0 @@
----
-- name: Install MySQL client
-  package:
-    name: mysql
-    state: present
-
