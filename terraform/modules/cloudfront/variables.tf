@@ -3,6 +3,11 @@ variable "s3_bucket_domain" {
   type        = string
 }
 
+variable "alb_domain_name" {
+  description = "Domain name of the ALB for CloudFront origin"
+  type        = string
+}
+
 variable "project_name" {
   description = "Project name"
   type        = string
@@ -13,3 +18,8 @@ variable "environment" {
   type        = string
 }
 
+variable "waf_acl_id" {
+  description = "WAF Web ACL ID to associate with CloudFront"
+  type        = string
+  default     = ""  # Optionnel si pas encore de WAF
+}

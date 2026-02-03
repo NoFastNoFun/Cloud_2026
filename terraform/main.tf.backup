@@ -60,23 +60,18 @@ module "primary_security" {
 module "primary_rds" {
   source = "./modules/rds"
 
-  project_name = var.project_name
-  environment  = var.environment
-
-  private_subnet_ids = module.vpc.private_subnet_ids
-  security_group_id  = aws_security_group.rds.id
-
+  vpc_id               = module.primary_vpc.vpc_id
+  private_subnet_ids   = module.primary_vpc.private_subnet_ids
+  security_group_id    = module.primary_security.rds_security_group_id
+  project_name         = var.project_name
+  environment          = var.environment
   db_instance_class    = var.db_instance_class
   db_allocated_storage = var.db_allocated_storage
   db_engine_version    = var.db_engine_version
   db_name              = var.db_name
   db_username          = var.db_username
   db_password          = var.db_password
-
-  rds_proxy_role_arn   = aws_iam_role.rds_proxy.arn
-  rds_proxy_secret_arn = aws_secretsmanager_secret.rds_proxy.arn
 }
-
 
 # Primary Region - S3 Module
 module "primary_s3" {
@@ -110,7 +105,7 @@ module "primary_waf" {
   environment  = var.environment
 }
 
-# Primary Region - CloudFront Module 
+# Primary Region - CloudFront Module (✅ MODIFIÉ)
 module "primary_cloudfront" {
   source = "./modules/cloudfront"
 
@@ -305,3 +300,40 @@ output "s3_bucket_name" {
   value       = module.primary_s3.bucket_name
 }
 
+# ✅ NOUVEAU : Instructions pour les utilisateurs
+output "deployment_instructions" {
+  description = "Next steps after deployment"
+  value = <<-EOT
+    
+    ============================================
+    🚀 DEPLOYMENT SUCCESSFUL
+    ============================================
+    
+    1. Main Application URL (via CloudFront + WAF):
+       ${module.primary_cloudfront.distribution_url}
+    
+    2. Direct ALB URL (bypass CloudFront - for testing only):
+       http://${module.primary_alb.alb_dns_name}
+    
+    3. WAF Dashboard (monitor attacks):
+       https://console.aws.amazon.com/wafv2/homev2/web-acl/${module.primary_waf.web_acl_id}/overview?region=global
+    
+    4. CloudFront Cache Stats:
+       https://console.aws.amazon.com/cloudfront/v3/home#/distributions/${module.primary_cloudfront.distribution_id}
+    
+    ============================================
+    📊 VALIDATION TESTS
+    ============================================
+    
+    # Test normal request
+    curl -I "${module.primary_cloudfront.distribution_url}"
+    
+    # Test SQL injection (should be blocked)
+    curl -X POST "${module.primary_cloudfront.distribution_url}/app/login" -d "username=admin' OR '1'='1"
+    
+    # Test cache hit for images
+    curl -I "${module.primary_cloudfront.distribution_url}/logo.png"
+    
+    ============================================
+  EOT
+}
