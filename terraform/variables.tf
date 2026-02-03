@@ -142,4 +142,3 @@ variable "php_version" {
   type        = string
   default     = "8.2"
 }
-

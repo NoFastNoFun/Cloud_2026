@@ -1,9 +1,5 @@
 # GreenLeaf E-commerce Cloud Infrastructure
 
-> **🚀 NEW: Simplified Deployment!** 
-> This project now supports deployment with **Terraform only** - no Ansible required!
-> See [Quick Start Guide](QUICK_START.md) for the fastest deployment method.
-
 ## 📖 Project Overview
 
 This project involves designing, deploying, and documenting a scalable cloud infrastructure on **AWS** for **GreenLeaf**, a startup specializing in eco-friendly products. The goal is to host the **PrestaShop** e-commerce platform while ensuring high availability, security, and cost efficiency.
@@ -17,7 +13,7 @@ The infrastructure is built to meet the following requirements:
 - **Cloud Provider**: Amazon Web Services (AWS)
 - **Application**: PrestaShop 8.x (latest stable)
 - **Infrastructure as Code**: Terraform (with automated user_data configuration)
-- **Configuration Management**: Built into user_data script (Ansible optional)
+- **Configuration Management**: Built into user_data script
 - **Regions**: Multi-region deployment (Ireland primary, Frankfurt DR)
 
 **Key Features**:
@@ -43,26 +39,11 @@ The infrastructure is built to meet the following requirements:
 │       ├── vpc/                  # VPC, subnets, IGW, NAT gateways
 │       ├── security/             # Security groups
 │       ├── alb/                  # Application Load Balancer
-│       ├── ec2/                  # Launch template, Auto Scaling Group
+│       ├── ec2/                  # Launch template, Auto Scaling Group (includes user_data.sh)
 │       ├── rds/                  # RDS MySQL Multi-AZ
 │       ├── s3/                   # S3 buckets for static assets and backups
 │       ├── cloudfront/           # CloudFront distribution
 │       └── cloudwatch/           # CloudWatch alarms and log groups
-├── ansible/                      # Ansible playbooks (OPTIONAL - legacy)
-│   ├── ansible.cfg               # Ansible configuration
-│   ├── site.yml                  # Main playbook
-│   ├── inventory/
-│   │   └── aws_ec2.yml          # Dynamic AWS EC2 inventory
-│   ├── group_vars/
-│   │   └── all.yml              # Common variables
-│   └── roles/
-│       ├── common/              # System updates and basic packages
-│       ├── nginx/               # Nginx installation and configuration
-│       ├── php/                 # PHP 8.2 with PrestaShop extensions
-│       ├── mysql-client/        # MySQL client installation
-│       ├── prestashop/          # PrestaShop installation
-│       └── cloudwatch-agent/   # CloudWatch agent configuration
-│   NOTE: All configuration is now automated via user_data.sh
 ├── docs/                         # Project documentation
 │   ├── DAT.md                    # Technical Architecture Document
 │   ├── FinOps_Report.md          # Cost analysis and optimization strategies
@@ -80,7 +61,7 @@ Ensure you have the following tools installed:
 - [Terraform](https://www.terraform.io/) (>= 1.0)
 - Git
 
-**Note**: Ansible is NO LONGER REQUIRED. All configuration is automated via Terraform user_data scripts.
+**Note**: All configuration is fully automated via Terraform user_data scripts.
 
 ### Quick Start
 
@@ -125,9 +106,7 @@ http://<ALB_DNS>
 
 ### Detailed Instructions
 
-**New Deployment Method (Recommended)**: See [Deployment Without Ansible](DEPLOYMENT_WITHOUT_ANSIBLE.md) for the simplified Terraform-only approach.
-
-**Legacy Method**: See [Deployment Guide](docs/Deployment_Guide.md) if you prefer using Ansible for configuration management.
+See [Deployment Guide](docs/Deployment_Guide.md) for complete deployment instructions and troubleshooting.
 
 **What Happens Automatically**:
 - ✅ System packages installed and updated
@@ -243,7 +222,7 @@ systemctl status nginx php-fpm
 ## 📝 Deliverables Checklist
 
 - [x] Technical Architecture Document (DAT)
-- [x] Source Code (Terraform & Ansible)
+- [x] Source Code (Terraform IaC)
 - [x] FinOps Report
 - [x] Deployment & Exploitation Guide
 - [ ] Final Presentation (to be created)
