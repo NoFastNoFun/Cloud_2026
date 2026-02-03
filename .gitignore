@@ -36,3 +36,6 @@ docs/*.pdf
 *.tmp
 *.log
 
+# Notes personnelles
+NOTES_KERNEL_TUNING.txt
+
