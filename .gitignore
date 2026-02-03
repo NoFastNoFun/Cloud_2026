@@ -6,6 +6,12 @@
 terraform.tfvars
 *.tfvars.backup
 
+# AWS
+.aws/
+
+# docker
+.docker/
+
 # Ansible
 *.retry
 .vault_pass
