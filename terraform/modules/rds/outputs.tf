@@ -25,3 +25,8 @@ output "db_name" {
   value       = aws_db_instance.main.db_name
 }
 
+output "rds_proxy_endpoint" {
+  description = "Endpoint of the RDS Proxy"
+  value       = aws_db_proxy.main.endpoint
+  sensitive   = true
+}

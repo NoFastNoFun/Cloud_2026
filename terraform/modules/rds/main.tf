@@ -74,3 +74,25 @@ resource "aws_db_instance" "main" {
   }
 }
 
+resource "aws_db_proxy" "main" {
+  name                   = "${var.project_name}-${var.environment}-proxy"
+  role_arn               = aws_iam_role.rds_proxy_role.arn
+  vpc_security_group_ids = [var.security_group_id]
+  vpc_subnet_ids         = var.private_subnet_ids
+
+  auth {
+    auth_scheme = "SECRETS"
+    description = "Authentication for RDS Proxy"
+    secret_arn  = aws_secretsmanager_secret.rds_proxy_secret.arn
+  }
+
+  require_tls = true
+
+  idle_client_timeout = 1800
+  debug_logging       = false
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-proxy"
+    Environment = var.environment
+  }
+}

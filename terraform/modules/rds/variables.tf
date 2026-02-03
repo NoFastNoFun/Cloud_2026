@@ -55,3 +55,12 @@ variable "db_password" {
   sensitive   = true
 }
 
+variable "rds_proxy_secret_arn" {
+  description = "ARN of the Secrets Manager secret for RDS Proxy authentication"
+  type        = string
+}
+
+variable "rds_proxy_role_arn" {
+  description = "ARN of the IAM role for RDS Proxy"
+  type        = string
+}
