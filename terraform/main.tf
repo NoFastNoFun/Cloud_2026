@@ -198,3 +198,58 @@ module "dr_ec2" {
   region                    = var.dr_region
 }
 
+# Primary Region Outputs
+output "primary_alb_dns" {
+  description = "DNS name of primary ALB"
+  value       = module.primary_alb.alb_dns_name
+}
+
+output "primary_cloudfront_url" {
+  description = "CloudFront distribution URL (USE THIS as main entry point)"
+  value       = module.primary_cloudfront.distribution_url
+}
+
+output "primary_cloudfront_domain" {
+  description = "CloudFront domain name"
+  value       = module.primary_cloudfront.distribution_domain_name
+}
+
+# WAF Outputs
+output "waf_web_acl_id" {
+  description = "WAF Web ACL ID"
+  value       = module.primary_waf.web_acl_id
+}
+
+output "waf_web_acl_arn" {
+  description = "WAF Web ACL ARN"
+  value       = module.primary_waf.web_acl_arn
+}
+
+output "waf_dashboard_url" {
+  description = "Direct link to WAF dashboard"
+  value       = "https://console.aws.amazon.com/wafv2/homev2/web-acl/${module.primary_waf.web_acl_id}/overview?region=global"
+}
+
+output "cloudfront_monitoring_url" {
+  description = "Direct link to CloudFront monitoring"
+  value       = "https://console.aws.amazon.com/cloudfront/v3/home#/distributions/${module.primary_cloudfront.distribution_id}"
+}
+
+# Primary Region - Database
+output "primary_db_endpoint" {
+  description = "RDS endpoint for primary region"
+  value       = module.primary_rds.db_endpoint
+  sensitive   = true
+}
+
+# DR Region Outputs (conditional)
+output "dr_alb_dns" {
+  description = "DNS name of DR ALB"
+  value       = var.enable_dr ? module.dr_alb[0].alb_dns_name : "DR not enabled"
+}
+
+# S3 Bucket
+output "s3_bucket_name" {
+  description = "S3 bucket name for static assets"
+  value       = module.primary_s3.bucket_name
+}
