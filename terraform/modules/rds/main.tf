@@ -1,4 +1,3 @@
-# DB Subnet Group
 resource "aws_db_subnet_group" "main" {
   name       = "${var.project_name}-${var.environment}-db-subnet-group"
   subnet_ids = var.private_subnet_ids
@@ -8,12 +7,10 @@ resource "aws_db_subnet_group" "main" {
   }
 }
 
-# DB Parameter Group
 resource "aws_db_parameter_group" "main" {
   name   = "${var.project_name}-${var.environment}-mysql-${replace(var.db_engine_version, ".", "")}"
   family = "mysql${var.db_engine_version}"
 
-  # Optimize for PrestaShop
   parameter {
     name  = "max_connections"
     value = "500"
@@ -29,7 +26,6 @@ resource "aws_db_parameter_group" "main" {
   }
 }
 
-# RDS Instance
 resource "aws_db_instance" "main" {
   identifier = "${var.project_name}-${var.environment}-db"
 
@@ -50,23 +46,18 @@ resource "aws_db_instance" "main" {
   parameter_group_name   = aws_db_parameter_group.main.name
   vpc_security_group_ids = [var.security_group_id]
 
-  # Single-AZ for cost optimization (can be changed to true for high availability)
   multi_az = false
 
-  # Backup configuration
   backup_retention_period = 3
   backup_window           = "03:00-04:00"
   maintenance_window      = "mon:04:00-mon:05:00"
 
-  # Enable automated backups
   skip_final_snapshot       = false
   final_snapshot_identifier = "${var.project_name}-${var.environment}-final-snapshot-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
   deletion_protection       = false
 
-  # Performance Insights (disabled for cost optimization)
   performance_insights_enabled = false
 
-  # Monitoring
   enabled_cloudwatch_logs_exports = ["error", "general", "slowquery"]
 
   tags = {
@@ -76,6 +67,7 @@ resource "aws_db_instance" "main" {
 
 resource "aws_db_proxy" "main" {
   name                   = "${var.project_name}-${var.environment}-proxy"
+  engine_family          = "MYSQL"
   role_arn               = aws_iam_role.rds_proxy_role.arn
   vpc_security_group_ids = [var.security_group_id]
   vpc_subnet_ids         = var.private_subnet_ids
@@ -95,4 +87,38 @@ resource "aws_db_proxy" "main" {
     Name        = "${var.project_name}-${var.environment}-proxy"
     Environment = var.environment
   }
+}
+
+resource "aws_iam_role" "rds_proxy_role" {
+  name = "${var.project_name}-${var.environment}-rds-proxy-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "rds.amazonaws.com"
+      }
+    }]
+  })
+}
+
+resource "aws_secretsmanager_secret" "rds_proxy_secret" {
+  name = "${var.project_name}-${var.environment}-rds-proxy-auth-secret"
+}
+
+resource "aws_db_proxy_default_target_group" "main" {
+  db_proxy_name = aws_db_proxy.main.name
+
+  connection_pool_config {
+    connection_borrow_timeout    = 120
+    max_connections_percent      = 100
+  }
+}
+
+resource "aws_db_proxy_target" "main" {
+  db_instance_identifier = aws_db_instance.main.identifier
+  db_proxy_name          = aws_db_proxy.main.name
+  target_group_name      = aws_db_proxy_default_target_group.main.name
 }

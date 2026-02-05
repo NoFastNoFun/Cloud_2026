@@ -13,3 +13,14 @@ variable "environment" {
   type        = string
 }
 
+variable "web_acl_id" {
+  description = "ID of the WAFv2 Web ACL for CloudFront"
+  type        = string
+}
+
+variable "alb_dns_name" {
+  description = "DNS name of the Application Load Balancer (ALB)"
+  type        = string
+}
+
+

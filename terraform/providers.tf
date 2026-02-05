@@ -7,16 +7,8 @@ terraform {
       version = "~> 5.0"
     }
   }
-
-  # Optional: Uncomment to use S3 backend for state management
-  # backend "s3" {
-  #   bucket = "greenleaf-terraform-state"
-  #   key    = "terraform.tfstate"
-  #   region = "eu-west-1"
-  # }
 }
 
-# Primary region provider (Ireland)
 provider "aws" {
   region = var.primary_region
 
@@ -29,7 +21,20 @@ provider "aws" {
   }
 }
 
-# DR region provider (Frankfurt)
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+
+  default_tags {
+    tags = {
+      Project     = "GreenLeaf"
+      Environment = var.environment
+      ManagedBy   = "Terraform"
+      Layer       = "Global-Security"
+    }
+  }
+}
+
 provider "aws" {
   alias  = "dr"
   region = var.dr_region
@@ -42,4 +47,3 @@ provider "aws" {
     }
   }
 }
-

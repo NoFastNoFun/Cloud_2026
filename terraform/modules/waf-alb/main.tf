@@ -3,20 +3,18 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = "~> 5.0"
-      configuration_aliases = [aws.us_east_1]
     }
   }
 }
 
-resource "aws_wafv2_web_acl" "cloudfront" {
-  provider = aws.us_east_1  
-  
-  name  = "${var.project_name}-${var.environment}-waf-cloudfront"
-  scope = "CLOUDFRONT"  
+resource "aws_wafv2_web_acl" "alb" {
+  name  = "${var.project_name}-${var.environment}-waf-alb"
+  scope = "REGIONAL"  # Pour ALB (pas CLOUDFRONT)
 
   default_action {
     allow {}
   }
+
 
   rule {
     name     = "block-sql-injection"
@@ -35,7 +33,7 @@ resource "aws_wafv2_web_acl" "cloudfront" {
 
     visibility_config {
       cloudwatch_metrics_enabled = true
-      metric_name                = "SQLiRule"
+      metric_name                = "SQLiRule-ALB"
       sampled_requests_enabled   = true
     }
   }
@@ -57,7 +55,7 @@ resource "aws_wafv2_web_acl" "cloudfront" {
 
     visibility_config {
       cloudwatch_metrics_enabled = true
-      metric_name                = "XSSRule"
+      metric_name                = "XSSRule-ALB"
       sampled_requests_enabled   = true
     }
   }
@@ -70,14 +68,6 @@ resource "aws_wafv2_web_acl" "cloudfront" {
       managed_rule_group_statement {
         vendor_name = "AWS"
         name        = "AWSManagedRulesCommonRuleSet"
-        
-        
-        # rule_action_override {
-        #   name = "SizeRestrictions_BODY"
-        #   action_to_use {
-        #     count {}
-        #   }
-        # }
       }
     }
 
@@ -87,7 +77,7 @@ resource "aws_wafv2_web_acl" "cloudfront" {
 
     visibility_config {
       cloudwatch_metrics_enabled = true
-      metric_name                = "CoreRuleSet"
+      metric_name                = "CoreRuleSet-ALB"
       sampled_requests_enabled   = true
     }
   }
@@ -98,7 +88,7 @@ resource "aws_wafv2_web_acl" "cloudfront" {
 
     statement {
       rate_based_statement {
-        limit              = 2000  # 2000 requêtes par IP toutes les 5 minutes
+        limit           = 2000  # 2000 req/5min par IP
         aggregate_key_type = "IP"
       }
     }
@@ -113,61 +103,35 @@ resource "aws_wafv2_web_acl" "cloudfront" {
 
     visibility_config {
       cloudwatch_metrics_enabled = true
-      metric_name                = "RateLimitRule"
-      sampled_requests_enabled   = true
-    }
-  }
-  rule {
-    name     = "block-bad-bots"
-    priority = 5
-
-    statement {
-      managed_rule_group_statement {
-        vendor_name = "AWS"
-        name        = "AWSManagedRulesBotControlRuleSet"
-      }
-    }
-
-    override_action {
-      none {}
-    }
-
-    visibility_config {
-      cloudwatch_metrics_enabled = true
-      metric_name                = "BotControlRule"
+      metric_name                = "RateLimitRule-ALB"
       sampled_requests_enabled   = true
     }
   }
 
   visibility_config {
     cloudwatch_metrics_enabled = true
-    metric_name                = "${var.project_name}-${var.environment}-WAF"
+    metric_name                = "${var.project_name}-${var.environment}-WAF-ALB"
     sampled_requests_enabled   = true
   }
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-waf-cloudfront"
+    Name        = "${var.project_name}-${var.environment}-waf-alb"
     Environment = var.environment
   }
 }
 
 resource "aws_cloudwatch_log_group" "waf_logs" {
-  provider = aws.us_east_1
-  
-  name = "aws-waf-logs-${var.project_name}-${var.environment}"
+  name = "aws-waf-logs-${var.project_name}-${var.environment}-alb"
   retention_in_days = 7
 
   tags = {
-    Name        = "${var.project_name}-${var.environment}-waf-logs"
+    Name        = "${var.project_name}-${var.environment}-waf-alb-logs"
     Environment = var.environment
   }
 }
 
-
 resource "aws_wafv2_web_acl_logging_configuration" "main" {
-  provider = aws.us_east_1
-  
-  resource_arn            = aws_wafv2_web_acl.cloudfront.arn
+  resource_arn      = aws_wafv2_web_acl.alb.arn
   log_destination_configs = [aws_cloudwatch_log_group.waf_logs.arn]
 
   redacted_fields {
@@ -181,4 +145,9 @@ resource "aws_wafv2_web_acl_logging_configuration" "main" {
       name = "cookie"
     }
   }
+}
+
+resource "aws_wafv2_web_acl_association" "alb" {
+  resource_arn = var.alb_arn
+  web_acl_arn  = aws_wafv2_web_acl.alb.arn
 }
