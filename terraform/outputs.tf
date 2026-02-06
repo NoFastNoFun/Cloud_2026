@@ -63,3 +63,28 @@ output "cloudwatch_alarms" {
   value       = module.primary_cloudwatch.alarm_names
 }
 
+output "cloudwatch_sns_topic" {
+  description = "SNS topic ARN for CloudWatch alarms"
+  value       = module.primary_cloudwatch.sns_topic_arn
+}
+
+output "cloudwatch_dashboard" {
+  description = "CloudWatch dashboard name"
+  value       = module.primary_cloudwatch.dashboard_name
+}
+
+output "cloudwatch_log_groups" {
+  description = "CloudWatch log group names"
+  value       = module.primary_cloudwatch.log_group_names
+}
+
+output "dr_cloudwatch_alarms" {
+  description = "DR CloudWatch alarm names"
+  value       = var.enable_dr ? module.dr_cloudwatch[0].alarm_names : null
+}
+
+output "dr_cloudwatch_dashboard" {
+  description = "DR CloudWatch dashboard name"
+  value       = var.enable_dr ? module.dr_cloudwatch[0].dashboard_name : null
+}
+

@@ -30,17 +30,17 @@ module "primary_security" {
 module "primary_rds" {
   source = "./modules/rds"
 
-  vpc_id                = module.primary_vpc.vpc_id
-  private_subnet_ids    = module.primary_vpc.private_subnet_ids
-  security_group_id     = module.primary_security.rds_security_group_id
-  project_name          = var.project_name
-  environment           = var.environment
-  db_instance_class     = var.db_instance_class
-  db_allocated_storage  = var.db_allocated_storage
-  db_engine_version     = var.db_engine_version
-  db_name               = var.db_name
-  db_username           = var.db_username
-  db_password           = var.db_password
+  vpc_id               = module.primary_vpc.vpc_id
+  private_subnet_ids   = module.primary_vpc.private_subnet_ids
+  security_group_id    = module.primary_security.rds_security_group_id
+  project_name         = var.project_name
+  environment          = var.environment
+  db_instance_class    = var.db_instance_class
+  db_allocated_storage = var.db_allocated_storage
+  db_engine_version    = var.db_engine_version
+  db_name              = var.db_name
+  db_username          = var.db_username
+  db_password          = var.db_password
 }
 
 module "primary_s3" {
@@ -57,8 +57,8 @@ module "primary_waf" {
   environment  = var.environment
 
   providers = {
-    aws           = aws.us_east_1 
-    aws.us_east_1 = aws.us_east_1 
+    aws           = aws.us_east_1
+    aws.us_east_1 = aws.us_east_1
   }
 }
 
@@ -70,7 +70,7 @@ module "primary_cloudfront" {
   project_name     = var.project_name
   environment      = var.environment
   web_acl_id       = module.primary_waf.web_acl_arn
-  alb_dns_name     = module.primary_alb.alb_dns_name 
+  alb_dns_name     = module.primary_alb.alb_dns_name
 }
 
 module "primary_alb" {
@@ -123,10 +123,14 @@ module "primary_ec2" {
 module "primary_cloudwatch" {
   source = "./modules/cloudwatch"
 
-  project_name      = var.project_name
-  environment       = var.environment
-  autoscaling_group = module.primary_ec2.autoscaling_group_name
-  rds_instance_id   = module.primary_rds.db_instance_id
+  project_name          = var.project_name
+  environment           = var.environment
+  region                = var.primary_region
+  autoscaling_group     = module.primary_ec2.autoscaling_group_name
+  rds_instance_id       = module.primary_rds.db_instance_id
+  alb_target_group_arn  = module.primary_alb.target_group_arn
+  alb_arn_suffix        = module.primary_alb.alb_arn_suffix
+  alarm_email_endpoints = var.cloudwatch_alarm_email_endpoints
 }
 
 module "dr_vpc" {
@@ -205,4 +209,22 @@ module "dr_ec2" {
   prestashop_admin_password = var.prestashop_admin_password
   prestashop_domain         = var.prestashop_domain != "" ? var.prestashop_domain : module.dr_alb[0].alb_dns_name
   region                    = var.dr_region
+}
+
+module "dr_cloudwatch" {
+  count  = var.enable_dr ? 1 : 0
+  source = "./modules/cloudwatch"
+
+  providers = {
+    aws = aws.dr
+  }
+
+  project_name           = var.project_name
+  environment            = "${var.environment}-dr"
+  region                 = var.dr_region
+  autoscaling_group      = module.dr_ec2[0].autoscaling_group_name
+  rds_instance_id        = module.primary_rds.db_instance_id
+  alb_target_group_arn   = module.dr_alb[0].target_group_arn
+  alb_arn_suffix         = module.dr_alb[0].alb_arn_suffix
+  alarm_email_endpoints  = var.cloudwatch_alarm_email_endpoints
 }

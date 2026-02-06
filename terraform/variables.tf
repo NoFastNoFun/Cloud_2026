@@ -142,3 +142,9 @@ variable "php_version" {
   type        = string
   default     = "8.2"
 }
+
+variable "cloudwatch_alarm_email_endpoints" {
+  description = "List of email addresses to receive CloudWatch alarm notifications"
+  type        = list(string)
+  default     = []
+}

@@ -34,3 +34,11 @@ key_pair_name       = "your-key-pair-name"  # Optional: for SSH access
 # DR Configuration (Disabled by default for cost savings)
 enable_dr = false  # Set to true if disaster recovery is required (~$20/month additional cost)
 
+# CloudWatch Configuration
+# Email addresses to receive CloudWatch alarm notifications
+# You will receive a confirmation email for each address after deployment
+cloudwatch_alarm_email_endpoints = [
+  # "admin@example.com",
+  # "ops-team@example.com"
+]
+
