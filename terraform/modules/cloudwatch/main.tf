@@ -204,7 +204,6 @@ resource "aws_cloudwatch_log_group" "user_data" {
 
 # CloudWatch Alarm - ALB High Response Time
 resource "aws_cloudwatch_metric_alarm" "alb_high_response_time" {
-  count               = var.alb_target_group_arn != "" ? 1 : 0
   alarm_name          = "${var.project_name}-${var.environment}-alb-high-response-time"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
@@ -229,7 +228,6 @@ resource "aws_cloudwatch_metric_alarm" "alb_high_response_time" {
 
 # CloudWatch Alarm - ALB Unhealthy Hosts
 resource "aws_cloudwatch_metric_alarm" "alb_unhealthy_hosts" {
-  count               = var.alb_target_group_arn != "" ? 1 : 0
   alarm_name          = "${var.project_name}-${var.environment}-alb-unhealthy-hosts"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
@@ -254,7 +252,6 @@ resource "aws_cloudwatch_metric_alarm" "alb_unhealthy_hosts" {
 
 # CloudWatch Alarm - ALB 5XX Errors
 resource "aws_cloudwatch_metric_alarm" "alb_5xx_errors" {
-  count               = var.alb_arn_suffix != "" ? 1 : 0
   alarm_name          = "${var.project_name}-${var.environment}-alb-5xx-errors"
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 2
@@ -289,8 +286,8 @@ resource "aws_cloudwatch_dashboard" "main" {
         type = "metric"
         properties = {
           metrics = [
-            ["AWS/EC2", "CPUUtilization", { stat = "Average", label = "EC2 CPU Average" }],
-            ["${var.project_name}/${var.environment}", "mem_used_percent", { stat = "Average", label = "Memory Used %" }]
+            ["AWS/EC2", "CPUUtilization", { stat = "Average" }],
+            ["${var.project_name}/${var.environment}", "mem_used_percent", { stat = "Average" }]
           ]
           period = 300
           stat   = "Average"
@@ -308,8 +305,8 @@ resource "aws_cloudwatch_dashboard" "main" {
         type = "metric"
         properties = {
           metrics = [
-            ["AWS/RDS", "CPUUtilization", { stat = "Average", label = "RDS CPU", dimensions = { DBInstanceIdentifier = var.rds_instance_id } }],
-            [".", "DatabaseConnections", { stat = "Average", label = "DB Connections", dimensions = { DBInstanceIdentifier = var.rds_instance_id } }]
+            ["AWS/RDS", "CPUUtilization", "DBInstanceIdentifier", var.rds_instance_id, { stat = "Average" }],
+            [".", "DatabaseConnections", ".", ".", { stat = "Average" }]
           ]
           period = 300
           stat   = "Average"
@@ -321,7 +318,7 @@ resource "aws_cloudwatch_dashboard" "main" {
         type = "metric"
         properties = {
           metrics = [
-            ["AWS/RDS", "FreeStorageSpace", { stat = "Average", label = "Free Storage", dimensions = { DBInstanceIdentifier = var.rds_instance_id } }]
+            ["AWS/RDS", "FreeStorageSpace", "DBInstanceIdentifier", var.rds_instance_id, { stat = "Average" }]
           ]
           period = 300
           stat   = "Average"
@@ -333,8 +330,8 @@ resource "aws_cloudwatch_dashboard" "main" {
         type = "metric"
         properties = {
           metrics = [
-            ["AWS/ApplicationELB", "TargetResponseTime", { stat = "Average", label = "Response Time" }],
-            [".", "RequestCount", { stat = "Sum", label = "Request Count" }]
+            ["AWS/ApplicationELB", "TargetResponseTime", { stat = "Average" }],
+            [".", "RequestCount", { stat = "Sum" }]
           ]
           period = 300
           stat   = "Average"
@@ -346,8 +343,8 @@ resource "aws_cloudwatch_dashboard" "main" {
         type = "metric"
         properties = {
           metrics = [
-            ["AWS/ApplicationELB", "HealthyHostCount", { stat = "Average", label = "Healthy Hosts" }],
-            [".", "UnHealthyHostCount", { stat = "Average", label = "Unhealthy Hosts" }]
+            ["AWS/ApplicationELB", "HealthyHostCount", { stat = "Average" }],
+            [".", "UnHealthyHostCount", { stat = "Average" }]
           ]
           period = 300
           stat   = "Average"

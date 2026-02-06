@@ -106,14 +106,17 @@ resource "aws_iam_role" "rds_proxy_role" {
 
 resource "aws_secretsmanager_secret" "rds_proxy_secret" {
   name = "${var.project_name}-${var.environment}-rds-proxy-auth-secret"
+
+  # Suppression immédiate lors du destroy (pas de période de rétention)
+  recovery_window_in_days = 0
 }
 
 resource "aws_db_proxy_default_target_group" "main" {
   db_proxy_name = aws_db_proxy.main.name
 
   connection_pool_config {
-    connection_borrow_timeout    = 120
-    max_connections_percent      = 100
+    connection_borrow_timeout = 120
+    max_connections_percent   = 100
   }
 }
 
