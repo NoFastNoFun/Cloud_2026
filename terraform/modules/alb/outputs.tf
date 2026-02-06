@@ -23,3 +23,6 @@ output "target_group_id" {
   value       = aws_lb_target_group.prestashop.id
 }
 
+output "lb_arn" {
+  value = aws_lb.main.arn
+}

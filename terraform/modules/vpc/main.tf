@@ -9,7 +9,6 @@ resource "aws_vpc" "main" {
   }
 }
 
-# Internet Gateway
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
@@ -18,7 +17,6 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
-# Public Subnets
 resource "aws_subnet" "public" {
   count = length(var.availability_zones)
 
@@ -33,7 +31,6 @@ resource "aws_subnet" "public" {
   }
 }
 
-# Private Subnets
 resource "aws_subnet" "private" {
   count = length(var.availability_zones)
 
@@ -47,7 +44,6 @@ resource "aws_subnet" "private" {
   }
 }
 
-# Elastic IP for NAT Instance
 resource "aws_eip" "nat" {
   domain     = "vpc"
   depends_on = [aws_internet_gateway.main]
@@ -57,7 +53,6 @@ resource "aws_eip" "nat" {
   }
 }
 
-# Security Group for NAT Instance
 resource "aws_security_group" "nat" {
   name        = "${var.project_name}-${var.environment}-nat-sg"
   description = "Security group for NAT instance"
@@ -84,7 +79,6 @@ resource "aws_security_group" "nat" {
   }
 }
 
-# Get latest Amazon Linux 2023 AMI for NAT instance
 data "aws_ami" "amazon_linux" {
   most_recent = true
   owners      = ["amazon"]
@@ -131,13 +125,11 @@ resource "aws_instance" "nat" {
   depends_on = [aws_internet_gateway.main]
 }
 
-# Associate Elastic IP with NAT Instance
 resource "aws_eip_association" "nat" {
   instance_id   = aws_instance.nat.id
   allocation_id = aws_eip.nat.id
 }
 
-# Route Table for Public Subnets
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
@@ -151,15 +143,13 @@ resource "aws_route_table" "public" {
   }
 }
 
-# Route Table Associations for Public Subnets
-resource "aws_route_table_association" "public" {
+ resource "aws_route_table_association" "public" {
   count = length(aws_subnet.public)
 
   subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
-}
+ }
 
-# Route Tables for Private Subnets (all use single NAT instance for cost optimization)
 resource "aws_route_table" "private" {
   count = length(var.availability_zones)
 
@@ -175,11 +165,10 @@ resource "aws_route_table" "private" {
   }
 }
 
-# Route Table Associations for Private Subnets
 resource "aws_route_table_association" "private" {
-  count = length(aws_subnet.private)
+count = length(aws_subnet.private)
 
   subnet_id      = aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private[count.index].id
-}
+ }
 

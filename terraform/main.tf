@@ -1,4 +1,3 @@
-# Data sources
 data "aws_availability_zones" "primary" {
   state = "available"
 }
@@ -9,7 +8,6 @@ data "aws_availability_zones" "dr" {
   state    = "available"
 }
 
-# Primary Region - VPC Module
 module "primary_vpc" {
   source = "./modules/vpc"
 
@@ -20,7 +18,6 @@ module "primary_vpc" {
   environment        = var.environment
 }
 
-# Primary Region - Security Groups
 module "primary_security" {
   source = "./modules/security"
 
@@ -30,24 +27,22 @@ module "primary_security" {
   allowed_cidr_blocks = var.allowed_cidr_blocks
 }
 
-# Primary Region - RDS Module
 module "primary_rds" {
   source = "./modules/rds"
 
-  vpc_id               = module.primary_vpc.vpc_id
-  private_subnet_ids   = module.primary_vpc.private_subnet_ids
-  security_group_id    = module.primary_security.rds_security_group_id
-  project_name         = var.project_name
-  environment          = var.environment
-  db_instance_class    = var.db_instance_class
-  db_allocated_storage = var.db_allocated_storage
-  db_engine_version    = var.db_engine_version
-  db_name              = var.db_name
-  db_username          = var.db_username
-  db_password          = var.db_password
+  vpc_id                = module.primary_vpc.vpc_id
+  private_subnet_ids    = module.primary_vpc.private_subnet_ids
+  security_group_id     = module.primary_security.rds_security_group_id
+  project_name          = var.project_name
+  environment           = var.environment
+  db_instance_class     = var.db_instance_class
+  db_allocated_storage  = var.db_allocated_storage
+  db_engine_version     = var.db_engine_version
+  db_name               = var.db_name
+  db_username           = var.db_username
+  db_password           = var.db_password
 }
 
-# Primary Region - S3 Module
 module "primary_s3" {
   source = "./modules/s3"
 
@@ -56,16 +51,28 @@ module "primary_s3" {
   environment  = var.environment
 }
 
-# Primary Region - CloudFront Module
+module "primary_waf" {
+  source       = "./modules/waf"
+  project_name = var.project_name
+  environment  = var.environment
+
+  providers = {
+    aws           = aws.us_east_1 
+    aws.us_east_1 = aws.us_east_1 
+  }
+}
+
+
 module "primary_cloudfront" {
   source = "./modules/cloudfront"
 
   s3_bucket_domain = module.primary_s3.bucket_domain_name
   project_name     = var.project_name
   environment      = var.environment
+  web_acl_id       = module.primary_waf.web_acl_arn
+  alb_dns_name     = module.primary_alb.alb_dns_name 
 }
 
-# Primary Region - ALB Module
 module "primary_alb" {
   source = "./modules/alb"
 
@@ -76,7 +83,14 @@ module "primary_alb" {
   environment       = var.environment
 }
 
-# Primary Region - EC2 Module
+module "waf_alb" {
+  source       = "./modules/waf-alb"
+  project_name = var.project_name
+  environment  = var.environment
+  alb_arn      = module.primary_alb.lb_arn
+}
+
+
 module "primary_ec2" {
   source = "./modules/ec2"
 
@@ -106,7 +120,6 @@ module "primary_ec2" {
   region                    = var.primary_region
 }
 
-# Primary Region - CloudWatch Module
 module "primary_cloudwatch" {
   source = "./modules/cloudwatch"
 
@@ -116,7 +129,6 @@ module "primary_cloudwatch" {
   rds_instance_id   = module.primary_rds.db_instance_id
 }
 
-# DR Region - VPC Module (conditional)
 module "dr_vpc" {
   count  = var.enable_dr ? 1 : 0
   source = "./modules/vpc"
@@ -126,13 +138,12 @@ module "dr_vpc" {
   }
 
   region             = var.dr_region
-  vpc_cidr           = "10.1.0.0/16" # Different CIDR for DR
+  vpc_cidr           = "10.1.0.0/16"
   availability_zones = length(var.availability_zones) > 0 ? var.availability_zones : slice(data.aws_availability_zones.dr[0].names, 0, 2)
   project_name       = var.project_name
   environment        = "${var.environment}-dr"
 }
 
-# DR Region - Security Groups (conditional)
 module "dr_security" {
   count  = var.enable_dr ? 1 : 0
   source = "./modules/security"
@@ -147,7 +158,6 @@ module "dr_security" {
   allowed_cidr_blocks = var.allowed_cidr_blocks
 }
 
-# DR Region - ALB Module (conditional, minimal setup)
 module "dr_alb" {
   count  = var.enable_dr ? 1 : 0
   source = "./modules/alb"
@@ -163,7 +173,6 @@ module "dr_alb" {
   environment       = "${var.environment}-dr"
 }
 
-# DR Region - EC2 Module (conditional, minimal setup - can scale up on failover)
 module "dr_ec2" {
   count  = var.enable_dr ? 1 : 0
   source = "./modules/ec2"
@@ -178,17 +187,17 @@ module "dr_ec2" {
   security_group_id         = module.dr_security[0].ec2_security_group_id
   target_group_arn          = module.dr_alb[0].target_group_arn
   instance_type             = var.instance_type
-  min_size                  = 0 # DR starts with 0 instances
+  min_size                  = 0
   max_size                  = var.max_size
-  desired_capacity          = 0 # DR starts with 0 instances
+  desired_capacity          = 0
   project_name              = var.project_name
   environment               = "${var.environment}-dr"
   key_pair_name             = var.key_pair_name
-  db_endpoint               = module.primary_rds.db_endpoint # DR can use primary DB or have its own
+  db_endpoint               = module.primary_rds.db_endpoint
   db_name                   = var.db_name
   db_username               = var.db_username
   db_password               = var.db_password
-  s3_bucket_name            = module.primary_s3.bucket_name # Can share S3 or have separate
+  s3_bucket_name            = module.primary_s3.bucket_name
   cloudfront_url            = module.primary_cloudfront.distribution_url
   prestashop_version        = var.prestashop_version
   php_version               = var.php_version
@@ -197,4 +206,3 @@ module "dr_ec2" {
   prestashop_domain         = var.prestashop_domain != "" ? var.prestashop_domain : module.dr_alb[0].alb_dns_name
   region                    = var.dr_region
 }
-
