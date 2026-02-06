@@ -1,6 +1,24 @@
 ############################################
-# cloudwatch/main.tf (modifié)
+# cloudwatch/main.tf 
 ############################################
+
+# SNS Topic pour les notifications d'alarmes
+resource "aws_sns_topic" "cloudwatch_alarms" {
+  name = "${var.project_name}-${var.environment}-cloudwatch-alarms"
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-cloudwatch-alarms"
+    Environment = var.environment
+  }
+}
+
+# SNS Topic Subscription (Email)
+resource "aws_sns_topic_subscription" "cloudwatch_alarms_email" {
+  count     = length(var.alarm_email_endpoints) > 0 ? length(var.alarm_email_endpoints) : 0
+  topic_arn = aws_sns_topic.cloudwatch_alarms.arn
+  protocol  = "email"
+  endpoint  = var.alarm_email_endpoints[count.index]
+}
 
 # CloudWatch Alarm - High CPU Utilization
 resource "aws_cloudwatch_metric_alarm" "high_cpu" {
@@ -14,8 +32,8 @@ resource "aws_cloudwatch_metric_alarm" "high_cpu" {
   threshold           = 80
   alarm_description   = "This metric monitors EC2 CPU utilization"
 
-  # Optionnel: brancher une action (SNS ou scaling policy) via var.high_cpu_alarm_actions
-  alarm_actions = var.high_cpu_alarm_actions
+  # Actions d'alarme avec SNS topic par défaut
+  alarm_actions = length(var.high_cpu_alarm_actions) > 0 ? var.high_cpu_alarm_actions : [aws_sns_topic.cloudwatch_alarms.arn]
 
   dimensions = {
     AutoScalingGroupName = var.autoscaling_group
@@ -38,8 +56,8 @@ resource "aws_cloudwatch_metric_alarm" "low_cpu" {
   threshold           = 20
   alarm_description   = "This metric monitors EC2 CPU utilization for scale down"
 
-  # Optionnel: brancher une action (SNS ou scaling policy) via var.low_cpu_alarm_actions
-  alarm_actions = var.low_cpu_alarm_actions
+  # Actions d'alarme avec SNS topic par défaut
+  alarm_actions = length(var.low_cpu_alarm_actions) > 0 ? var.low_cpu_alarm_actions : [aws_sns_topic.cloudwatch_alarms.arn]
 
   dimensions = {
     AutoScalingGroupName = var.autoscaling_group
@@ -65,8 +83,8 @@ resource "aws_cloudwatch_metric_alarm" "high_memory" {
   threshold         = 85
   alarm_description = "This metric monitors EC2 memory utilization"
 
-  # Optionnel: brancher une action via var.high_memory_alarm_actions
-  alarm_actions = var.high_memory_alarm_actions
+  # Actions d'alarme avec SNS topic par défaut
+  alarm_actions = length(var.high_memory_alarm_actions) > 0 ? var.high_memory_alarm_actions : [aws_sns_topic.cloudwatch_alarms.arn]
 
   tags = {
     Name = "${var.project_name}-${var.environment}-high-memory-alarm"
@@ -85,7 +103,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_high_cpu" {
   threshold           = 80
   alarm_description   = "This metric monitors RDS CPU utilization"
 
-  alarm_actions = var.rds_alarm_actions
+  alarm_actions = length(var.rds_alarm_actions) > 0 ? var.rds_alarm_actions : [aws_sns_topic.cloudwatch_alarms.arn]
 
   dimensions = {
     DBInstanceIdentifier = var.rds_instance_id
@@ -108,7 +126,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_free_storage" {
   threshold           = 5000000000
   alarm_description   = "This metric monitors RDS free storage space"
 
-  alarm_actions = var.rds_alarm_actions
+  alarm_actions = length(var.rds_alarm_actions) > 0 ? var.rds_alarm_actions : [aws_sns_topic.cloudwatch_alarms.arn]
 
   dimensions = {
     DBInstanceIdentifier = var.rds_instance_id
@@ -131,7 +149,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_connections" {
   threshold           = 400
   alarm_description   = "This metric monitors RDS database connections"
 
-  alarm_actions = var.rds_alarm_actions
+  alarm_actions = length(var.rds_alarm_actions) > 0 ? var.rds_alarm_actions : [aws_sns_topic.cloudwatch_alarms.arn]
 
   dimensions = {
     DBInstanceIdentifier = var.rds_instance_id
@@ -178,4 +196,173 @@ resource "aws_cloudwatch_log_group" "user_data" {
   tags = {
     Name = "${var.project_name}-${var.environment}-user-data-logs"
   }
+}
+
+# ============================================================
+# ALB CLOUDWATCH ALARMS
+# ============================================================
+
+# CloudWatch Alarm - ALB High Response Time
+resource "aws_cloudwatch_metric_alarm" "alb_high_response_time" {
+  count               = var.alb_target_group_arn != "" ? 1 : 0
+  alarm_name          = "${var.project_name}-${var.environment}-alb-high-response-time"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "TargetResponseTime"
+  namespace           = "AWS/ApplicationELB"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 2
+  alarm_description   = "This metric monitors ALB target response time"
+
+  alarm_actions = length(var.alb_alarm_actions) > 0 ? var.alb_alarm_actions : [aws_sns_topic.cloudwatch_alarms.arn]
+
+  dimensions = {
+    TargetGroup  = var.alb_target_group_arn
+    LoadBalancer = var.alb_arn_suffix
+  }
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-alb-high-response-time-alarm"
+  }
+}
+
+# CloudWatch Alarm - ALB Unhealthy Hosts
+resource "aws_cloudwatch_metric_alarm" "alb_unhealthy_hosts" {
+  count               = var.alb_target_group_arn != "" ? 1 : 0
+  alarm_name          = "${var.project_name}-${var.environment}-alb-unhealthy-hosts"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "UnHealthyHostCount"
+  namespace           = "AWS/ApplicationELB"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 0
+  alarm_description   = "This metric monitors number of unhealthy hosts in target group"
+
+  alarm_actions = length(var.alb_alarm_actions) > 0 ? var.alb_alarm_actions : [aws_sns_topic.cloudwatch_alarms.arn]
+
+  dimensions = {
+    TargetGroup  = var.alb_target_group_arn
+    LoadBalancer = var.alb_arn_suffix
+  }
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-alb-unhealthy-hosts-alarm"
+  }
+}
+
+# CloudWatch Alarm - ALB 5XX Errors
+resource "aws_cloudwatch_metric_alarm" "alb_5xx_errors" {
+  count               = var.alb_arn_suffix != "" ? 1 : 0
+  alarm_name          = "${var.project_name}-${var.environment}-alb-5xx-errors"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "HTTPCode_Target_5XX_Count"
+  namespace           = "AWS/ApplicationELB"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 10
+  alarm_description   = "This metric monitors ALB 5XX errors"
+
+  alarm_actions = length(var.alb_alarm_actions) > 0 ? var.alb_alarm_actions : [aws_sns_topic.cloudwatch_alarms.arn]
+
+  dimensions = {
+    LoadBalancer = var.alb_arn_suffix
+  }
+
+  tags = {
+    Name = "${var.project_name}-${var.environment}-alb-5xx-errors-alarm"
+  }
+}
+
+# ============================================================
+# CLOUDWATCH DASHBOARD
+# ============================================================
+
+resource "aws_cloudwatch_dashboard" "main" {
+  dashboard_name = "${var.project_name}-${var.environment}-dashboard"
+
+  dashboard_body = jsonencode({
+    widgets = [
+      {
+        type = "metric"
+        properties = {
+          metrics = [
+            ["AWS/EC2", "CPUUtilization", { stat = "Average", label = "EC2 CPU Average" }],
+            ["${var.project_name}/${var.environment}", "mem_used_percent", { stat = "Average", label = "Memory Used %" }]
+          ]
+          period = 300
+          stat   = "Average"
+          region = var.region
+          title  = "EC2 - CPU & Memory"
+          yAxis = {
+            left = {
+              min = 0
+              max = 100
+            }
+          }
+        }
+      },
+      {
+        type = "metric"
+        properties = {
+          metrics = [
+            ["AWS/RDS", "CPUUtilization", { stat = "Average", label = "RDS CPU", dimensions = { DBInstanceIdentifier = var.rds_instance_id } }],
+            [".", "DatabaseConnections", { stat = "Average", label = "DB Connections", dimensions = { DBInstanceIdentifier = var.rds_instance_id } }]
+          ]
+          period = 300
+          stat   = "Average"
+          region = var.region
+          title  = "RDS - Performance Metrics"
+        }
+      },
+      {
+        type = "metric"
+        properties = {
+          metrics = [
+            ["AWS/RDS", "FreeStorageSpace", { stat = "Average", label = "Free Storage", dimensions = { DBInstanceIdentifier = var.rds_instance_id } }]
+          ]
+          period = 300
+          stat   = "Average"
+          region = var.region
+          title  = "RDS - Storage"
+        }
+      },
+      {
+        type = "metric"
+        properties = {
+          metrics = [
+            ["AWS/ApplicationELB", "TargetResponseTime", { stat = "Average", label = "Response Time" }],
+            [".", "RequestCount", { stat = "Sum", label = "Request Count" }]
+          ]
+          period = 300
+          stat   = "Average"
+          region = var.region
+          title  = "ALB - Performance"
+        }
+      },
+      {
+        type = "metric"
+        properties = {
+          metrics = [
+            ["AWS/ApplicationELB", "HealthyHostCount", { stat = "Average", label = "Healthy Hosts" }],
+            [".", "UnHealthyHostCount", { stat = "Average", label = "Unhealthy Hosts" }]
+          ]
+          period = 300
+          stat   = "Average"
+          region = var.region
+          title  = "ALB - Target Health"
+        }
+      },
+      {
+        type = "log"
+        properties = {
+          query  = "SOURCE '/aws/ec2/${var.project_name}/${var.environment}/nginx/error' | fields @timestamp, @message | sort @timestamp desc | limit 20"
+          region = var.region
+          title  = "Recent Nginx Errors"
+        }
+      }
+    ]
+  })
 }
