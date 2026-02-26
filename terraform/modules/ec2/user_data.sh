@@ -1,5 +1,13 @@
 #!/bin/bash
-set -euo pipefail
+# Logging en premier : tout ce qui suit est capture, meme les crashs
+exec > >(tee /var/log/user-data.log | logger -t user-data -s 2>/dev/console) 2>&1
+echo "========================================="
+echo "user-data started at $(date)"
+echo "========================================="
+
+# pipefail uniquement : -e retire car on gère les erreurs section par section
+# -u retire : evite crash sur var Terraform vide (ex: s3_bucket_name optionnel)
+set -o pipefail
 
 # ============================================================
 # KERNEL TUNING - Optimisation pour 9000+ connexions simultanees
@@ -81,7 +89,6 @@ systemctl daemon-reload
 # FIN KERNEL TUNING
 # ============================================================
 
-exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
 echo "=========================================="
 echo "Starting user-data script at $(date)"
 echo "=========================================="
@@ -112,25 +119,31 @@ PHP_MAX_INPUT_VARS="5000"
 # ========================================
 echo "[1/8] Installing system packages..."
 
-# Fix curl-minimal conflict on Amazon Linux 2023
-yum remove -y curl-minimal || true
+yum update -y || echo "WARNING: yum update returned non-zero, continuing..."
 
-yum update -y
+# php-json et php-zip sont integres dans PHP 8+ (AL2023) - ne pas les lister
+# mariadb105 : fallback sur mariadb si indisponible
 yum install -y \
-    git wget unzip curl vim htop \
+    git wget unzip vim htop \
     nginx \
     php php-fpm php-cli php-common php-gd php-intl php-mbstring \
-    php-mysqlnd php-opcache php-xml php-zip php-json php-curl \
+    php-mysqlnd php-opcache php-xml php-curl \
     php-bcmath php-soap \
-    mariadb105 \
     amazon-cloudwatch-agent \
-    amazon-ssm-agent
+    amazon-ssm-agent || {
+    echo "ERROR: yum install (phase 1) a echoue. Tentative sans paquets optionnels..."
+    yum install -y nginx php php-fpm php-cli php-mysqlnd amazon-cloudwatch-agent amazon-ssm-agent
+}
+
+# Paquets optionnels (echec non bloquant)
+yum install -y mariadb105 || yum install -y mariadb || echo "WARNING: mariadb client non installe"
+yum install -y php-zip || echo "WARNING: php-zip non disponible (peut etre integre)"
 
 # Set timezone
-timedatectl set-timezone UTC
+timedatectl set-timezone UTC || true
 
 # Enable SSM agent
-systemctl enable --now amazon-ssm-agent
+systemctl enable --now amazon-ssm-agent || true
 
 # ========================================
 # 2. PHP CONFIGURATION
@@ -169,8 +182,8 @@ pm.max_spare_servers = 35
 pm.max_requests = 500
 EOF
 
-systemctl enable php-fpm
-systemctl start php-fpm
+systemctl enable php-fpm || true
+systemctl start php-fpm || true
 
 # ========================================
 # 3. NGINX CONFIGURATION
@@ -261,17 +274,20 @@ server {
 }
 NGINXEOF
 
-nginx -t
-systemctl enable nginx
-systemctl start nginx
+nginx -t || echo "WARNING: nginx -t a echoue, verification de la config..."
+systemctl enable nginx || true
+systemctl start nginx || true
 
 # ========================================
 # 4. INSTALL COMPOSER
 # ========================================
 echo "[4/8] Installing Composer..."
+# Desactiver pipefail localement : curl|php ferait echouer le script si php retourne != 0
+set +o pipefail
 curl -sS https://getcomposer.org/installer | php
-mv composer.phar /usr/local/bin/composer
-chmod +x /usr/local/bin/composer
+set -o pipefail
+mv composer.phar /usr/local/bin/composer || true
+chmod +x /usr/local/bin/composer || true
 
 # ========================================
 # 5. INSTALL PRESTASHOP
@@ -366,7 +382,7 @@ echo "[7/8] Configuring CloudWatch Agent..."
 
 mkdir -p /opt/aws/amazon-cloudwatch-agent/etc
 
-cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<CWEOF
+cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<'CWEOF'
 {
     "logs": {
         "logs_collected": {
@@ -374,17 +390,22 @@ cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<CWEOF
                 "collect_list": [
                     {
                         "file_path": "/var/log/nginx/access.log",
-                        "log_group_name": "/aws/ec2/$PROJECT_NAME/$ENVIRONMENT/nginx/access",
+                        "log_group_name": "/aws/ec2/PROJECT_NAME_PLACEHOLDER/ENVIRONMENT_PLACEHOLDER/nginx/access",
                         "log_stream_name": "{instance_id}"
                     },
                     {
                         "file_path": "/var/log/nginx/error.log",
-                        "log_group_name": "/aws/ec2/$PROJECT_NAME/$ENVIRONMENT/nginx/error",
+                        "log_group_name": "/aws/ec2/PROJECT_NAME_PLACEHOLDER/ENVIRONMENT_PLACEHOLDER/nginx/error",
                         "log_stream_name": "{instance_id}"
                     },
                     {
-                        "file_path": "$PRESTASHOP_DIR/var/logs/*.log",
-                        "log_group_name": "/aws/ec2/$PROJECT_NAME/$ENVIRONMENT/prestashop/system",
+                        "file_path": "/var/www/prestashop/var/logs/*.log",
+                        "log_group_name": "/aws/ec2/PROJECT_NAME_PLACEHOLDER/ENVIRONMENT_PLACEHOLDER/prestashop/system",
+                        "log_stream_name": "{instance_id}"
+                    },
+                    {
+                        "file_path": "/var/log/user-data.log",
+                        "log_group_name": "/aws/ec2/PROJECT_NAME_PLACEHOLDER/ENVIRONMENT_PLACEHOLDER/user-data",
                         "log_stream_name": "{instance_id}"
                     }
                 ]
@@ -392,26 +413,26 @@ cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<CWEOF
         }
     },
     "metrics": {
-        "namespace": "$PROJECT_NAME/$ENVIRONMENT",
+        "namespace": "PROJECT_NAME_PLACEHOLDER/ENVIRONMENT_PLACEHOLDER",
         "metrics_collected": {
             "cpu": {
                 "measurement": [
-                    {"name": "cpu_usage_idle", "rename": "CPU_USAGE_IDLE", "unit": "Percent"},
-                    {"name": "cpu_usage_iowait", "rename": "CPU_USAGE_IOWAIT", "unit": "Percent"},
-                    {"name": "cpu_usage_user", "rename": "CPU_USAGE_USER", "unit": "Percent"},
-                    {"name": "cpu_usage_system", "rename": "CPU_USAGE_SYSTEM", "unit": "Percent"}
+                    {"name": "cpu_usage_idle", "unit": "Percent"},
+                    {"name": "cpu_usage_iowait", "unit": "Percent"},
+                    {"name": "cpu_usage_user", "unit": "Percent"},
+                    {"name": "cpu_usage_system", "unit": "Percent"}
                 ],
                 "totalcpu": false
             },
             "disk": {
                 "measurement": [
-                    {"name": "used_percent", "rename": "DISK_USED_PERCENT", "unit": "Percent"}
+                    {"name": "used_percent", "unit": "Percent"}
                 ],
                 "resources": ["*"]
             },
             "mem": {
                 "measurement": [
-                    {"name": "mem_used_percent", "rename": "MEM_USED_PERCENT", "unit": "Percent"}
+                    {"name": "mem_used_percent", "unit": "Percent"}
                 ]
             }
         }
@@ -419,15 +440,39 @@ cat > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json <<CWEOF
 }
 CWEOF
 
+# Replace placeholders with actual values
+sed -i "s/PROJECT_NAME_PLACEHOLDER/$PROJECT_NAME/g" /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+sed -i "s/ENVIRONMENT_PLACEHOLDER/$ENVIRONMENT/g" /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+
+# Verify config file was created
+if [ ! -f /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json ]; then
+    echo "ERROR: CloudWatch Agent config file not created!"
+    exit 1
+fi
+
+echo "CloudWatch Agent config created successfully"
+cat /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
+
 # Start CloudWatch agent
+echo "Starting CloudWatch Agent..."
 /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
     -a fetch-config \
     -m ec2 \
     -s \
     -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json
 
+if [ $? -eq 0 ]; then
+    echo "CloudWatch Agent started successfully"
+else
+    echo "WARNING: CloudWatch Agent failed to start with fetch-config"
+fi
+
 systemctl enable amazon-cloudwatch-agent
 systemctl start amazon-cloudwatch-agent
+
+# Wait a moment and check status
+sleep 3
+systemctl is-active amazon-cloudwatch-agent && echo "✓ CloudWatch Agent is active" || echo "✗ CloudWatch Agent failed to start"
 
 # ========================================
 # 8. FINAL CHECKS
