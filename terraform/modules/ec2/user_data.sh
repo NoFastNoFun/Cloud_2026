@@ -111,6 +111,10 @@ PHP_MAX_INPUT_VARS="5000"
 # 1. SYSTEM SETUP
 # ========================================
 echo "[1/8] Installing system packages..."
+
+# Fix curl-minimal conflict on Amazon Linux 2023
+yum remove -y curl-minimal || true
+
 yum update -y
 yum install -y \
     git wget unzip curl vim htop \
