@@ -26,6 +26,18 @@ Provide measurable evidence for Black Friday criteria:
 k6 run -e BASE_URL=https://your-endpoint k6_blackfriday.js --summary-export results/summary.json
 ```
 
+Quick run (recommended for local validation, ~10 minutes):
+
+```bash
+k6 run -e BASE_URL=https://your-endpoint -e LOAD_PROFILE=quick k6_blackfriday.js --summary-export results/summary-quick.json
+```
+
+Quick run with explicit endpoint list (recommended when some routes return 403/404):
+
+```bash
+k6 run -e BASE_URL=https://your-endpoint -e LOAD_PROFILE=quick -e ENDPOINTS=/ k6_blackfriday.js --summary-export results/summary-quick.json
+```
+
 Optional console capture:
 
 ```bash

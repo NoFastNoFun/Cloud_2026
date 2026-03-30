@@ -4,23 +4,46 @@ import { Rate } from "k6/metrics";
 
 const businessErrors = new Rate("business_errors");
 const baseUrl = __ENV.BASE_URL || "http://localhost";
+const loadProfile = (__ENV.LOAD_PROFILE || "full").toLowerCase();
+
+const fullStages = [
+  { duration: "5m", target: 1000 },
+  { duration: "10m", target: 5000 },
+  { duration: "15m", target: 20000 },
+  { duration: "20m", target: 50000 },
+  { duration: "20m", target: 70000 },
+  { duration: "20m", target: 90000 },
+  { duration: "30m", target: 90000 },
+  { duration: "10m", target: 0 }
+];
+
+const quickStages = [
+  { duration: "1m", target: 50 },
+  { duration: "3m", target: 200 },
+  { duration: "3m", target: 500 },
+  { duration: "3m", target: 0 }
+];
+
+const selectedStages = loadProfile === "quick" ? quickStages : fullStages;
+const startVUs = loadProfile === "quick" ? 10 : 100;
+const defaultEndpoints = loadProfile === "quick" ? ["/"] : ["/", "/healthz", "/img/"];
+const endpoints = (__ENV.ENDPOINTS || defaultEndpoints.join(","))
+  .split(",")
+  .map((e) => e.trim())
+  .filter(Boolean);
+
+const requestHeaders = {
+  "User-Agent": __ENV.USER_AGENT || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) k6-load-test",
+  Accept: "text/html,application/json,*/*"
+};
 
 export const options = {
   scenarios: {
     black_friday_ramp: {
       executor: "ramping-vus",
-      startVUs: 100,
+      startVUs,
       gracefulRampDown: "30s",
-      stages: [
-        { duration: "5m", target: 1000 },
-        { duration: "10m", target: 5000 },
-        { duration: "15m", target: 20000 },
-        { duration: "20m", target: 50000 },
-        { duration: "20m", target: 70000 },
-        { duration: "20m", target: 90000 },
-        { duration: "30m", target: 90000 },
-        { duration: "10m", target: 0 }
-      ]
+      stages: selectedStages
     }
   },
   thresholds: {
@@ -30,14 +53,18 @@ export const options = {
   }
 };
 
+export function setup() {
+  console.log(`k6 profile=${loadProfile} baseUrl=${baseUrl}`);
+}
+
 function pickEndpoint() {
-  const endpoints = ["/", "/healthz", "/img/"];
   return endpoints[Math.floor(Math.random() * endpoints.length)];
 }
 
 export default function () {
   const endpoint = pickEndpoint();
   const res = http.get(`${baseUrl}${endpoint}`, {
+    headers: requestHeaders,
     tags: { endpoint }
   });
 

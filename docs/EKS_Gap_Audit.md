@@ -5,32 +5,36 @@ Perimetre: repository actuel `Cloud_2026`
 
 ## Resume
 
-Le projet actuel est majoritairement EC2/ALB/RDS.  
-Les exigences Kubernetes/EKS sont partiellement couvertes au niveau preparation documentaire, mais pas encore au niveau execution runtime.
+Les briques Kubernetes/EKS sont maintenant deployees et verifiees en runtime:
+- cluster EKS `greenleaf-prod-eks` actif
+- nodegroup `greenleaf-prod-primary` actif
+- metrics-server operationnel (`kubectl top nodes` OK)
+- stack observability Helm deployee (`kube-prometheus-stack`, `jaeger`)
+- ressources demo K8s creees (namespace/deployment/service)
 
-## Checklist manquant / partiel / ok
+## Etat actuel des exigences
 
 | Exigence | Statut | Commentaire | Evidence |
 |---|---|---|---|
-| EKS cluster (Terraform) | Partiel | Module EKS ajoute dans cette iteration, pas encore deploiement prouve | `terraform/modules/eks/`, `terraform/main.tf` |
-| Helm deployment | Partiel | Provider Helm et release metrics-server implementes, non appliques dans l'environnement | `terraform/providers.tf`, `terraform/modules/k8s-bootstrap/` |
-| Kubernetes namespaces | Partiel | Terraform namespace bootstrap implementes, non appliques dans l'environnement | `terraform/modules/k8s-bootstrap/main.tf` |
-| RBAC (roles/bindings/serviceaccounts) | Partiel | Role/RoleBinding/ServiceAccount bootstrap implementes, non appliques dans l'environnement | `terraform/modules/k8s-bootstrap/main.tf` |
-| HPA | Partiel | HPA demo Terraform implemente, execution en environnement a valider | `terraform/modules/k8s-autoscaling/main.tf` |
-| VPA | Partiel | Deploiement VPA + resource demo implementes, execution en environnement a valider | `terraform/modules/k8s-autoscaling/main.tf` |
-| Cluster Autoscaler | Partiel | IRSA + Helm + tags ASG implementes, execution en environnement a valider | `terraform/modules/k8s-autoscaling/`, `terraform/modules/eks/main.tf` |
-| Prometheus | Partiel | Module Helm kube-prometheus-stack implemente, execution en environnement a valider | `terraform/modules/k8s-observability/` |
-| Grafana | Partiel | Deploiement via kube-prometheus-stack implemente + export template repo | `terraform/modules/k8s-observability/`, `docs/Grafana_Dashboard_Export.json` |
-| Jaeger / tracing | Partiel | Deploiement Helm Jaeger implemente, execution en environnement a valider | `terraform/modules/k8s-observability/` |
-| Load testing (k6/Locust) | Partiel | Script k6 et guide presents, execution non prouvee | `tests/load/k6_blackfriday.js` |
-| Seuils perf (p95<2s, erreurs<1%) | Partiel | Definis dans k6 thresholds, pas de resultats reels commits | `tests/load/k6_blackfriday.js` |
-| Security scans Trivy | Partiel | Scripts/docs presents, rapports absents | `security/scans/` |
-| Security scans OWASP ZAP | Partiel | Scripts/docs presents, rapports absents | `security/scans/` |
-| Documentation runbook/postmortem/ADR | OK | Livrables documentaires presents | `docs/Runbook_Incident_BlackFriday.md`, `docs/Postmortem_BlackFriday_Template.md`, `docs/ADRs/` |
+| EKS cluster (Terraform) | OK | Cluster cree et joignable via `kubectl` | `terraform/modules/eks/`, sortie apply + `kubectl cluster-info` |
+| Helm deployment | OK | Releases appliquees dans le cluster | `terraform/providers.tf`, `terraform/modules/k8s-bootstrap/`, `terraform/modules/k8s-observability/` |
+| Kubernetes namespaces | OK | Namespaces deployes (`bf-test`, `observability`) | `terraform/modules/k8s-bootstrap/main.tf`, `kubectl get ns` |
+| RBAC (roles/bindings/serviceaccounts) | OK | SA/Role/RoleBinding bootstrap appliques | `terraform/modules/k8s-bootstrap/main.tf` |
+| HPA | OK | HPA demo applique dans le cluster | `terraform/modules/k8s-autoscaling/main.tf`, `kubectl get hpa -A` |
+| VPA | OK | CRD VPA presente + ressource VPA creee apres second apply | `terraform/modules/k8s-autoscaling/main.tf`, `kubectl get crd verticalpodautoscalers.autoscaling.k8s.io` |
+| Cluster Autoscaler | OK | IRSA + chart deployes, tags nodegroup en place | `terraform/modules/k8s-autoscaling/`, `terraform/modules/eks/main.tf` |
+| Prometheus | OK | `kube-prometheus-stack` deploye | `terraform/modules/k8s-observability/`, `helm list -n observability` |
+| Grafana | OK | Service Grafana present dans `observability` | `terraform/modules/k8s-observability/`, `kubectl -n observability get svc` |
+| Jaeger / tracing | OK | Chart Jaeger deploye | `terraform/modules/k8s-observability/`, `helm list -n observability` |
+| Load testing (k6/Locust) | Partiel | Script et guide prets, rapport reel a archiver | `tests/load/k6_blackfriday.js`, `tests/load/README.md` |
+| Seuils perf (p95<2s, erreurs<1%) | Partiel | Thresholds deja codifies, preuves d'execution attendues | `tests/load/k6_blackfriday.js` |
+| Security scans Trivy | Partiel | Scripts prets, rapports a produire | `security/scans/run-trivy.ps1`, `security/scans/reports/` |
+| Security scans OWASP ZAP | Partiel | Scripts prets, rapports a produire | `security/scans/run-zap.ps1`, `security/scans/reports/` |
+| Documentation runbook/postmortem/ADR | OK | Livrables documentaires disponibles | `docs/Runbook_Incident_BlackFriday.md`, `docs/Postmortem_BlackFriday_Template.md`, `docs/ADRs/` |
 
-## Priorites immediates
+## Reste a finaliser pour la soutenance
 
-1. Activer le bootstrap K8s (`enable_k8s_bootstrap=true`) et appliquer namespaces/RBAC/metrics-server.
-2. Activer `enable_k8s_autoscaling=true` et verifier HPA/VPA/Cluster Autoscaler en live.
-3. Activer `enable_k8s_observability=true` et verifier Prometheus/Grafana/Jaeger en live.
-4. Produire les preuves d'execution (k6, Trivy, ZAP, dashboards live).
+1. Exporter les resultats `k6` dans `tests/load/results/`.
+2. Generer et archiver les rapports `Trivy` et `ZAP` dans `security/scans/reports/`.
+3. Exporter le dashboard Grafana reel utilise pendant la demo.
+4. Prendre 3-4 captures ecran clefs (cluster, hpa/vpa, helm observability, alarmes).

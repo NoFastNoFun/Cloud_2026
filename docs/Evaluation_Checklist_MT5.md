@@ -5,7 +5,7 @@ This file maps the project repository to the evaluation criteria from:
 
 ## 1. Infrastructure as Code
 
-Status: `Documented`
+Status: `Documented and applied`
 
 - Terraform modules and root orchestration are present in `terraform/`.
 - Remote state backend is configured (`S3 + DynamoDB lock`).
@@ -58,10 +58,10 @@ Still to prove during demo:
 
 ## 4. Observability and Dashboards
 
-Status: `Partially demonstrated`
+Status: `Validated in live cluster (core stack)`
 
 - CloudWatch alarms, logs, SNS notifications, and dashboard are configured.
-- Kubernetes observability module is implemented (Prometheus/Grafana/Jaeger via Helm).
+- Kubernetes observability module is implemented and deployed (Prometheus/Grafana/Jaeger via Helm).
 - Grafana dashboard export template is added for deliverable completeness.
 
 Evidence files:
@@ -73,6 +73,11 @@ Evidence files:
 Still to prove during demo:
 - Final exported dashboard tied to your live environment.
 - Tracing proof if Jaeger is required by jury.
+
+Live validation already done:
+- `helm list -n observability` shows `kube-prometheus-stack` and `jaeger` as deployed.
+- `kubectl -n observability get svc` shows Grafana/Prometheus/Alertmanager/Jaeger services.
+- `kubectl top nodes` returns metrics after metrics-server installation.
 
 ## 5. FinOps and Budget Management
 
@@ -104,7 +109,21 @@ Evidence files:
 - `docs/Postmortem_BlackFriday_Template.md`
 - `docs/Presentation_Outline.md`
 
-## 7. Demo Day Evidence Pack (to produce)
+## 7. Kubernetes / Autoscaling Runtime
+
+Status: `Validated`
+
+- EKS cluster and nodegroup are active (`greenleaf-prod-eks` / `greenleaf-prod-primary`).
+- K8s bootstrap is applied (namespaces + RBAC + metrics-server).
+- Autoscaling stack is applied (Cluster Autoscaler + HPA + VPA with CRD then resource flow).
+
+Evidence files:
+- `terraform/modules/eks/`
+- `terraform/modules/k8s-bootstrap/`
+- `terraform/modules/k8s-autoscaling/`
+- `docs/EKS_Gap_Audit.md`
+
+## 8. Demo Day Evidence Pack (to produce)
 
 Before final evaluation, collect these proofs:
 
