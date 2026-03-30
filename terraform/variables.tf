@@ -232,3 +232,27 @@ variable "eks_enable_irsa" {
   type        = bool
   default     = true
 }
+
+variable "enable_k8s_bootstrap" {
+  description = "Enable Kubernetes bootstrap resources (namespaces, RBAC, Helm base addons)"
+  type        = bool
+  default     = false
+}
+
+variable "k8s_app_namespace" {
+  description = "Application namespace for Kubernetes workloads"
+  type        = string
+  default     = "online-boutique"
+}
+
+variable "k8s_observability_namespace" {
+  description = "Namespace for observability stack"
+  type        = string
+  default     = "observability"
+}
+
+variable "k8s_enable_metrics_server" {
+  description = "Deploy metrics-server with Helm in kube-system"
+  type        = bool
+  default     = true
+}

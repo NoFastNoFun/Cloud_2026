@@ -13,9 +13,9 @@ Les exigences Kubernetes/EKS sont partiellement couvertes au niveau preparation 
 | Exigence | Statut | Commentaire | Evidence |
 |---|---|---|---|
 | EKS cluster (Terraform) | Partiel | Module EKS ajoute dans cette iteration, pas encore deploiement prouve | `terraform/modules/eks/`, `terraform/main.tf` |
-| Helm deployment | Manquant | Provider Helm et releases non implementes | n/a |
-| Kubernetes namespaces | Manquant | Aucun manifest K8s applique | n/a |
-| RBAC (roles/bindings/serviceaccounts) | Manquant | Non present dans le repo | n/a |
+| Helm deployment | Partiel | Provider Helm et release metrics-server implementes, non appliques dans l'environnement | `terraform/providers.tf`, `terraform/modules/k8s-bootstrap/` |
+| Kubernetes namespaces | Partiel | Terraform namespace bootstrap implementes, non appliques dans l'environnement | `terraform/modules/k8s-bootstrap/main.tf` |
+| RBAC (roles/bindings/serviceaccounts) | Partiel | Role/RoleBinding/ServiceAccount bootstrap implementes, non appliques dans l'environnement | `terraform/modules/k8s-bootstrap/main.tf` |
 | HPA | Manquant | Pas de manifest autoscaling K8s | n/a |
 | VPA | Manquant | Pas de VPA components/manifests | n/a |
 | Cluster Autoscaler | Manquant | Pas de deploiement CAS/IRSA policies dediees | n/a |
@@ -30,8 +30,7 @@ Les exigences Kubernetes/EKS sont partiellement couvertes au niveau preparation 
 
 ## Priorites immediates
 
-1. Activer et deployer EKS (`enable_eks=true`) puis valider acces cluster.
-2. Ajouter providers Kubernetes + Helm et deployer un socle namespace/RBAC.
-3. Ajouter HPA/VPA/Cluster Autoscaler.
-4. Deployer observabilite K8s (Prometheus/Grafana/Jaeger).
-5. Produire les preuves d'execution (k6, Trivy, ZAP, dashboards live).
+1. Activer le bootstrap K8s (`enable_k8s_bootstrap=true`) et appliquer namespaces/RBAC/metrics-server.
+2. Ajouter HPA/VPA/Cluster Autoscaler.
+3. Deployer observabilite K8s (Prometheus/Grafana/Jaeger).
+4. Produire les preuves d'execution (k6, Trivy, ZAP, dashboards live).

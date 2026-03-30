@@ -32,6 +32,7 @@ module "primary_eks" {
   vpc_cidr           = var.vpc_cidr
   private_subnet_ids = module.primary_vpc.private_subnet_ids
   public_subnet_ids  = module.primary_vpc.public_subnet_ids
+  node_subnet_ids    = module.primary_vpc.public_subnet_ids
 
   endpoint_private_access = var.eks_endpoint_private_access
   endpoint_public_access  = var.eks_endpoint_public_access
@@ -54,6 +55,24 @@ module "primary_eks" {
     ManagedBy   = "Terraform"
     Stack       = "EKS"
   }
+}
+
+module "k8s_bootstrap" {
+  count  = var.enable_k8s_bootstrap ? 1 : 0
+  source = "./modules/k8s-bootstrap"
+
+  providers = {
+    kubernetes = kubernetes.eks
+    helm       = helm.eks
+  }
+
+  project_name            = var.project_name
+  environment             = var.environment
+  app_namespace           = var.k8s_app_namespace
+  observability_namespace = var.k8s_observability_namespace
+  enable_metrics_server   = var.k8s_enable_metrics_server
+
+  depends_on = [module.primary_eks]
 }
 
 module "primary_security" {

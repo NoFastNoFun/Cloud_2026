@@ -113,3 +113,23 @@ output "primary_eks_oidc_provider_arn" {
   value       = var.enable_eks ? module.primary_eks[0].oidc_provider_arn : null
 }
 
+output "k8s_app_namespace" {
+  description = "Kubernetes application namespace created by bootstrap module"
+  value       = var.enable_k8s_bootstrap ? module.k8s_bootstrap[0].app_namespace : null
+}
+
+output "k8s_observability_namespace" {
+  description = "Kubernetes observability namespace created by bootstrap module"
+  value       = var.enable_k8s_bootstrap ? module.k8s_bootstrap[0].observability_namespace : null
+}
+
+output "k8s_deployer_service_account" {
+  description = "Kubernetes deployer service account name"
+  value       = var.enable_k8s_bootstrap ? module.k8s_bootstrap[0].deployer_service_account : null
+}
+
+output "k8s_metrics_server_release_name" {
+  description = "Helm release name for metrics-server"
+  value       = var.enable_k8s_bootstrap ? module.k8s_bootstrap[0].metrics_server_release_name : null
+}
+
