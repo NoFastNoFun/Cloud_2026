@@ -40,6 +40,12 @@ variable "public_subnet_ids" {
   default     = []
 }
 
+variable "node_subnet_ids" {
+  description = "Subnets used by worker nodes (empty = private_subnet_ids)"
+  type        = list(string)
+  default     = []
+}
+
 variable "endpoint_private_access" {
   description = "Whether EKS API endpoint is private"
   type        = bool

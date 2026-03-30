@@ -120,7 +120,7 @@ resource "aws_launch_template" "prestashop" {
   name_prefix   = "${var.project_name}-${var.environment}-"
   image_id      = data.aws_ami.amazon_linux.id
   instance_type = var.instance_type
-  key_name      = var.key_pair_name != "" ? var.key_pair_name : null
+  key_name      = null
 
   iam_instance_profile {
     name = aws_iam_instance_profile.ec2.name

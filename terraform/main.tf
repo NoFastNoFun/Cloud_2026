@@ -32,6 +32,7 @@ module "primary_eks" {
   vpc_cidr           = var.vpc_cidr
   private_subnet_ids = module.primary_vpc.private_subnet_ids
   public_subnet_ids  = module.primary_vpc.public_subnet_ids
+  node_subnet_ids    = module.primary_vpc.public_subnet_ids
 
   endpoint_private_access = var.eks_endpoint_private_access
   endpoint_public_access  = var.eks_endpoint_public_access
