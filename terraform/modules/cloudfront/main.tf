@@ -1,5 +1,5 @@
 resource "aws_cloudfront_origin_access_control" "s3" {
-  name                              = "${var.project_name}-${var.environment}-oac"
+  name                              = "${var.project_name}-${var.environment}-${substr(md5(var.s3_bucket_domain), 0, 8)}-oac"
   description                       = "OAC for S3 bucket"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
@@ -41,7 +41,7 @@ resource "aws_cloudfront_distribution" "main" {
     forwarded_values {
       query_string = true # Important pour les recherches et filtres PrestaShop
       cookies {
-        forward = "all"   # Important pour le panier et les sessions clients
+        forward = "all" # Important pour le panier et les sessions clients
       }
       headers = ["Host", "Origin", "Authorization"] # Transmet les headers vitaux
     }

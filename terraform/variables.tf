@@ -148,3 +148,87 @@ variable "cloudwatch_alarm_email_endpoints" {
   type        = list(string)
   default     = []
 }
+
+variable "enable_eks" {
+  description = "Enable EKS cluster deployment in primary region"
+  type        = bool
+  default     = false
+}
+
+variable "eks_cluster_name" {
+  description = "EKS cluster name override (empty = auto naming)"
+  type        = string
+  default     = ""
+}
+
+variable "eks_cluster_version" {
+  description = "EKS Kubernetes version"
+  type        = string
+  default     = "1.30"
+}
+
+variable "eks_endpoint_private_access" {
+  description = "Enable private access to EKS API endpoint"
+  type        = bool
+  default     = true
+}
+
+variable "eks_endpoint_public_access" {
+  description = "Enable public access to EKS API endpoint"
+  type        = bool
+  default     = true
+}
+
+variable "eks_public_access_cidrs" {
+  description = "CIDR list allowed for public access to EKS API endpoint"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
+
+variable "eks_cluster_log_types" {
+  description = "Enabled EKS control-plane log types"
+  type        = list(string)
+  default     = ["api", "audit", "authenticator"]
+}
+
+variable "eks_node_instance_types" {
+  description = "EKS managed node group instance types"
+  type        = list(string)
+  default     = ["t3.medium"]
+}
+
+variable "eks_node_capacity_type" {
+  description = "Capacity type for EKS managed node group (ON_DEMAND or SPOT)"
+  type        = string
+  default     = "ON_DEMAND"
+}
+
+variable "eks_node_disk_size" {
+  description = "Disk size in GiB for EKS worker nodes"
+  type        = number
+  default     = 30
+}
+
+variable "eks_node_desired_size" {
+  description = "Desired size for EKS managed node group"
+  type        = number
+  default     = 2
+}
+
+variable "eks_node_min_size" {
+  description = "Minimum size for EKS managed node group"
+  type        = number
+  default     = 1
+}
+
+variable "eks_node_max_size" {
+  description = "Maximum size for EKS managed node group"
+  type        = number
+  default     = 6
+}
+
+variable "eks_enable_irsa" {
+  description = "Create IAM OIDC provider for EKS IRSA"
+  type        = bool
+  default     = true
+}

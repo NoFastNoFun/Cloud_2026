@@ -88,3 +88,28 @@ output "dr_cloudwatch_dashboard" {
   value       = var.enable_dr ? module.dr_cloudwatch[0].dashboard_name : null
 }
 
+output "primary_eks_cluster_name" {
+  description = "Primary EKS cluster name (if enabled)"
+  value       = var.enable_eks ? module.primary_eks[0].cluster_name : null
+}
+
+output "primary_eks_cluster_arn" {
+  description = "Primary EKS cluster ARN (if enabled)"
+  value       = var.enable_eks ? module.primary_eks[0].cluster_arn : null
+}
+
+output "primary_eks_cluster_endpoint" {
+  description = "Primary EKS cluster endpoint (if enabled)"
+  value       = var.enable_eks ? module.primary_eks[0].cluster_endpoint : null
+}
+
+output "primary_eks_node_group_name" {
+  description = "Primary EKS node group name (if enabled)"
+  value       = var.enable_eks ? module.primary_eks[0].node_group_name : null
+}
+
+output "primary_eks_oidc_provider_arn" {
+  description = "Primary EKS OIDC provider ARN for IRSA (if enabled)"
+  value       = var.enable_eks ? module.primary_eks[0].oidc_provider_arn : null
+}
+

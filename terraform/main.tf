@@ -18,6 +18,44 @@ module "primary_vpc" {
   environment        = var.environment
 }
 
+module "primary_eks" {
+  count  = var.enable_eks ? 1 : 0
+  source = "./modules/eks"
+
+  project_name = var.project_name
+  environment  = var.environment
+  cluster_name = var.eks_cluster_name != "" ? var.eks_cluster_name : "${var.project_name}-${var.environment}-eks"
+
+  cluster_version = var.eks_cluster_version
+
+  vpc_id             = module.primary_vpc.vpc_id
+  vpc_cidr           = var.vpc_cidr
+  private_subnet_ids = module.primary_vpc.private_subnet_ids
+  public_subnet_ids  = module.primary_vpc.public_subnet_ids
+
+  endpoint_private_access = var.eks_endpoint_private_access
+  endpoint_public_access  = var.eks_endpoint_public_access
+  public_access_cidrs     = var.eks_public_access_cidrs
+  cluster_log_types       = var.eks_cluster_log_types
+
+  node_group_name     = "primary"
+  node_instance_types = var.eks_node_instance_types
+  node_capacity_type  = var.eks_node_capacity_type
+  node_disk_size      = var.eks_node_disk_size
+  node_desired_size   = var.eks_node_desired_size
+  node_min_size       = var.eks_node_min_size
+  node_max_size       = var.eks_node_max_size
+
+  enable_irsa = var.eks_enable_irsa
+
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+    Stack       = "EKS"
+  }
+}
+
 module "primary_security" {
   source = "./modules/security"
 
@@ -219,12 +257,12 @@ module "dr_cloudwatch" {
     aws = aws.dr
   }
 
-  project_name           = var.project_name
-  environment            = "${var.environment}-dr"
-  region                 = var.dr_region
-  autoscaling_group      = module.dr_ec2[0].autoscaling_group_name
-  rds_instance_id        = module.primary_rds.db_instance_id
-  alb_target_group_arn   = module.dr_alb[0].target_group_arn
-  alb_arn_suffix         = module.dr_alb[0].alb_arn_suffix
-  alarm_email_endpoints  = var.cloudwatch_alarm_email_endpoints
+  project_name          = var.project_name
+  environment           = "${var.environment}-dr"
+  region                = var.dr_region
+  autoscaling_group     = module.dr_ec2[0].autoscaling_group_name
+  rds_instance_id       = module.primary_rds.db_instance_id
+  alb_target_group_arn  = module.dr_alb[0].target_group_arn
+  alb_arn_suffix        = module.dr_alb[0].alb_arn_suffix
+  alarm_email_endpoints = var.cloudwatch_alarm_email_endpoints
 }
