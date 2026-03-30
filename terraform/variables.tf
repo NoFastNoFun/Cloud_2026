@@ -49,7 +49,7 @@ variable "min_size" {
 variable "max_size" {
   description = "Maximum number of instances in Auto Scaling Group"
   type        = number
-  default     = 6
+  default     = 2
 }
 
 variable "desired_capacity" {
@@ -188,19 +188,19 @@ variable "eks_public_access_cidrs" {
 variable "eks_cluster_log_types" {
   description = "Enabled EKS control-plane log types"
   type        = list(string)
-  default     = ["api", "audit", "authenticator"]
+  default     = ["api"]
 }
 
 variable "eks_node_instance_types" {
   description = "EKS managed node group instance types"
   type        = list(string)
-  default     = ["t3.medium"]
+  default     = ["t3.small"]
 }
 
 variable "eks_node_capacity_type" {
   description = "Capacity type for EKS managed node group (ON_DEMAND or SPOT)"
   type        = string
-  default     = "ON_DEMAND"
+  default     = "SPOT"
 }
 
 variable "eks_node_disk_size" {
@@ -212,19 +212,19 @@ variable "eks_node_disk_size" {
 variable "eks_node_desired_size" {
   description = "Desired size for EKS managed node group"
   type        = number
-  default     = 2
+  default     = 1
 }
 
 variable "eks_node_min_size" {
   description = "Minimum size for EKS managed node group"
   type        = number
-  default     = 1
+  default     = 0
 }
 
 variable "eks_node_max_size" {
   description = "Maximum size for EKS managed node group"
   type        = number
-  default     = 6
+  default     = 2
 }
 
 variable "eks_enable_irsa" {

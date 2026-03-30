@@ -9,7 +9,7 @@ vpc_cidr = "10.0.0.0/16"
 # EC2 Configuration (Optimized for cost)
 instance_type    = "t3.small"     # Reduced from t3.medium for cost savings
 min_size         = 1              # Reduced from 2 for cost savings
-max_size         = 6               # Can scale up when needed
+max_size         = 2              # Keep a strict cap to protect budget
 desired_capacity = 1              # Reduced from 2 for cost savings
 
 # RDS Configuration (Optimized for cost)
@@ -35,9 +35,14 @@ key_pair_name       = ""  # Optional: set only if the key pair already exists in
 enable_dr = false  # Set to true if disaster recovery is required (~$20/month additional cost)
 
 # EKS Configuration
-enable_eks          = true
+enable_eks          = false
 eks_cluster_name    = "greenleaf-prod-eks"
 eks_cluster_version = "1.30"
+eks_node_instance_types = ["t3.small"]
+eks_node_capacity_type  = "SPOT"
+eks_node_desired_size   = 1
+eks_node_min_size       = 0
+eks_node_max_size       = 1
 
 # Kubernetes Bootstrap (run after EKS is up)
 enable_k8s_bootstrap       = false

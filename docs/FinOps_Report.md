@@ -38,6 +38,8 @@ Main contributors:
 3. DR region set as optional (`enable_dr = false` by default).
 4. Log retention reduced for non-critical logs.
 5. NAT instance selected as cost-effective option for this context.
+6. EKS and Kubernetes add-ons are disabled by default in `terraform.tfvars` to preserve baseline budget.
+7. If EKS is enabled for demo, node group is constrained (`t3.small`, `SPOT`, min 0 / desired 1 / max 1).
 
 ## 5. Budget Governance
 
@@ -77,3 +79,4 @@ Track weekly:
 1. Aggressive load tests can spike cost quickly.
 2. 90k user simulations may require distributed generators and temporary overprovisioning.
 3. Insufficient tagging reduces cost attribution quality.
+4. Keeping EKS permanently enabled typically exceeds the $75-$100 monthly baseline.
