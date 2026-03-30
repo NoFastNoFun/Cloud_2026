@@ -75,6 +75,57 @@ module "k8s_bootstrap" {
   depends_on = [module.primary_eks]
 }
 
+module "k8s_autoscaling" {
+  count  = var.enable_k8s_autoscaling ? 1 : 0
+  source = "./modules/k8s-autoscaling"
+
+  providers = {
+    aws        = aws
+    kubernetes = kubernetes.eks
+    helm       = helm.eks
+  }
+
+  project_name      = var.project_name
+  environment       = var.environment
+  region            = var.primary_region
+  cluster_name      = module.primary_eks[0].cluster_name
+  oidc_provider_arn = module.primary_eks[0].oidc_provider_arn
+  oidc_issuer_url   = module.primary_eks[0].oidc_issuer_url
+  app_namespace     = var.k8s_app_namespace
+
+  enable_cluster_autoscaler        = var.k8s_enable_cluster_autoscaler
+  enable_vpa                       = var.k8s_enable_vpa
+  enable_vpa_resource              = var.k8s_enable_vpa_resource
+  enable_hpa_demo                  = var.k8s_enable_hpa_demo
+  cluster_autoscaler_chart_version = var.k8s_cluster_autoscaler_chart_version
+  vpa_chart_version                = var.k8s_vpa_chart_version
+  hpa_target_deployment_name       = var.k8s_hpa_target_deployment_name
+
+  depends_on = [module.primary_eks, module.k8s_bootstrap]
+}
+
+module "k8s_observability" {
+  count  = var.enable_k8s_observability ? 1 : 0
+  source = "./modules/k8s-observability"
+
+  providers = {
+    kubernetes = kubernetes.eks
+    helm       = helm.eks
+  }
+
+  project_name                   = var.project_name
+  environment                    = var.environment
+  observability_namespace        = var.k8s_observability_namespace
+  enable_prometheus_stack        = var.k8s_enable_prometheus_stack
+  enable_jaeger                  = var.k8s_enable_jaeger
+  prometheus_stack_chart_version = var.k8s_prometheus_stack_chart_version
+  jaeger_chart_version           = var.k8s_jaeger_chart_version
+  prometheus_retention           = var.k8s_prometheus_retention
+  grafana_admin_password         = var.k8s_grafana_admin_password
+
+  depends_on = [module.primary_eks, module.k8s_bootstrap]
+}
+
 module "primary_security" {
   source = "./modules/security"
 

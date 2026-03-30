@@ -61,10 +61,12 @@ Still to prove during demo:
 Status: `Partially demonstrated`
 
 - CloudWatch alarms, logs, SNS notifications, and dashboard are configured.
+- Kubernetes observability module is implemented (Prometheus/Grafana/Jaeger via Helm).
 - Grafana dashboard export template is added for deliverable completeness.
 
 Evidence files:
 - `terraform/modules/cloudwatch/main.tf`
+- `terraform/modules/k8s-observability/`
 - `docs/CloudWatch_Guide.md`
 - `docs/Grafana_Dashboard_Export.json`
 

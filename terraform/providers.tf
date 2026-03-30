@@ -58,31 +58,32 @@ provider "aws" {
 
 locals {
   effective_eks_cluster_name = var.eks_cluster_name != "" ? var.eks_cluster_name : "${var.project_name}-${var.environment}-eks"
+  enable_k8s_providers       = var.enable_k8s_bootstrap || var.enable_k8s_autoscaling || var.enable_k8s_observability
 }
 
 data "aws_eks_cluster" "primary" {
-  count = var.enable_k8s_bootstrap ? 1 : 0
+  count = local.enable_k8s_providers ? 1 : 0
   name  = local.effective_eks_cluster_name
 }
 
 data "aws_eks_cluster_auth" "primary" {
-  count = var.enable_k8s_bootstrap ? 1 : 0
+  count = local.enable_k8s_providers ? 1 : 0
   name  = local.effective_eks_cluster_name
 }
 
 provider "kubernetes" {
   alias                  = "eks"
-  host                   = var.enable_k8s_bootstrap ? data.aws_eks_cluster.primary[0].endpoint : null
-  cluster_ca_certificate = var.enable_k8s_bootstrap ? base64decode(data.aws_eks_cluster.primary[0].certificate_authority[0].data) : null
-  token                  = var.enable_k8s_bootstrap ? data.aws_eks_cluster_auth.primary[0].token : null
+  host                   = local.enable_k8s_providers ? data.aws_eks_cluster.primary[0].endpoint : null
+  cluster_ca_certificate = local.enable_k8s_providers ? base64decode(data.aws_eks_cluster.primary[0].certificate_authority[0].data) : null
+  token                  = local.enable_k8s_providers ? data.aws_eks_cluster_auth.primary[0].token : null
 }
 
 provider "helm" {
   alias = "eks"
 
   kubernetes {
-    host                   = var.enable_k8s_bootstrap ? data.aws_eks_cluster.primary[0].endpoint : null
-    cluster_ca_certificate = var.enable_k8s_bootstrap ? base64decode(data.aws_eks_cluster.primary[0].certificate_authority[0].data) : null
-    token                  = var.enable_k8s_bootstrap ? data.aws_eks_cluster_auth.primary[0].token : null
+    host                   = local.enable_k8s_providers ? data.aws_eks_cluster.primary[0].endpoint : null
+    cluster_ca_certificate = local.enable_k8s_providers ? base64decode(data.aws_eks_cluster.primary[0].certificate_authority[0].data) : null
+    token                  = local.enable_k8s_providers ? data.aws_eks_cluster_auth.primary[0].token : null
   }
 }

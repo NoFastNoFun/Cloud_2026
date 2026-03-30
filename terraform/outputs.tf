@@ -118,7 +118,7 @@ output "k8s_app_namespace" {
   value       = var.enable_k8s_bootstrap ? module.k8s_bootstrap[0].app_namespace : null
 }
 
-output "k8s_observability_namespace" {
+output "k8s_bootstrap_observability_namespace" {
   description = "Kubernetes observability namespace created by bootstrap module"
   value       = var.enable_k8s_bootstrap ? module.k8s_bootstrap[0].observability_namespace : null
 }
@@ -131,5 +131,45 @@ output "k8s_deployer_service_account" {
 output "k8s_metrics_server_release_name" {
   description = "Helm release name for metrics-server"
   value       = var.enable_k8s_bootstrap ? module.k8s_bootstrap[0].metrics_server_release_name : null
+}
+
+output "k8s_cluster_autoscaler_role_arn" {
+  description = "IAM role ARN used by Cluster Autoscaler"
+  value       = var.enable_k8s_autoscaling ? module.k8s_autoscaling[0].cluster_autoscaler_iam_role_arn : null
+}
+
+output "k8s_cluster_autoscaler_release_name" {
+  description = "Helm release name for Cluster Autoscaler"
+  value       = var.enable_k8s_autoscaling ? module.k8s_autoscaling[0].cluster_autoscaler_release_name : null
+}
+
+output "k8s_vpa_release_name" {
+  description = "Helm release name for VPA"
+  value       = var.enable_k8s_autoscaling ? module.k8s_autoscaling[0].vpa_release_name : null
+}
+
+output "k8s_hpa_name" {
+  description = "HPA name created for demo workload"
+  value       = var.enable_k8s_autoscaling ? module.k8s_autoscaling[0].hpa_name : null
+}
+
+output "k8s_vpa_name" {
+  description = "VPA name created for demo workload"
+  value       = var.enable_k8s_autoscaling ? module.k8s_autoscaling[0].vpa_name : null
+}
+
+output "k8s_observability_namespace" {
+  description = "Namespace used by observability stack"
+  value       = var.enable_k8s_observability ? module.k8s_observability[0].observability_namespace : null
+}
+
+output "k8s_prometheus_stack_release_name" {
+  description = "Helm release name for kube-prometheus-stack"
+  value       = var.enable_k8s_observability ? module.k8s_observability[0].prometheus_stack_release_name : null
+}
+
+output "k8s_jaeger_release_name" {
+  description = "Helm release name for Jaeger"
+  value       = var.enable_k8s_observability ? module.k8s_observability[0].jaeger_release_name : null
 }
 

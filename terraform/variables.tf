@@ -256,3 +256,94 @@ variable "k8s_enable_metrics_server" {
   type        = bool
   default     = true
 }
+
+variable "enable_k8s_autoscaling" {
+  description = "Enable Kubernetes autoscaling stack (Cluster Autoscaler, VPA, HPA demo)"
+  type        = bool
+  default     = false
+}
+
+variable "k8s_enable_cluster_autoscaler" {
+  description = "Deploy Cluster Autoscaler via Helm and IRSA"
+  type        = bool
+  default     = true
+}
+
+variable "k8s_enable_vpa" {
+  description = "Deploy Vertical Pod Autoscaler controllers and VPA resource"
+  type        = bool
+  default     = true
+}
+
+variable "k8s_enable_vpa_resource" {
+  description = "Create VerticalPodAutoscaler resource (enable after VPA CRD installation)"
+  type        = bool
+  default     = false
+}
+
+variable "k8s_enable_hpa_demo" {
+  description = "Create a demo deployment and HPA in app namespace"
+  type        = bool
+  default     = true
+}
+
+variable "k8s_cluster_autoscaler_chart_version" {
+  description = "Cluster Autoscaler chart version (empty = latest)"
+  type        = string
+  default     = ""
+}
+
+variable "k8s_vpa_chart_version" {
+  description = "VPA chart version (empty = latest)"
+  type        = string
+  default     = ""
+}
+
+variable "k8s_hpa_target_deployment_name" {
+  description = "Demo deployment name used by HPA/VPA resources"
+  type        = string
+  default     = "autoscaling-demo"
+}
+
+variable "enable_k8s_observability" {
+  description = "Enable Kubernetes observability stack (Prometheus, Grafana, Jaeger)"
+  type        = bool
+  default     = false
+}
+
+variable "k8s_enable_prometheus_stack" {
+  description = "Deploy kube-prometheus-stack"
+  type        = bool
+  default     = true
+}
+
+variable "k8s_enable_jaeger" {
+  description = "Deploy Jaeger tracing stack"
+  type        = bool
+  default     = true
+}
+
+variable "k8s_prometheus_stack_chart_version" {
+  description = "kube-prometheus-stack chart version (empty = latest)"
+  type        = string
+  default     = ""
+}
+
+variable "k8s_jaeger_chart_version" {
+  description = "Jaeger chart version (empty = latest)"
+  type        = string
+  default     = ""
+}
+
+variable "k8s_prometheus_retention" {
+  description = "Prometheus retention duration"
+  type        = string
+  default     = "7d"
+}
+
+variable "k8s_grafana_admin_password" {
+  description = "Grafana admin password (empty = chart default secret)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
