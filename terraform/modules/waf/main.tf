@@ -1,21 +1,45 @@
 terraform {
   required_providers {
     aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
+      source                = "hashicorp/aws"
+      version               = "~> 5.0"
       configuration_aliases = [aws.us_east_1]
     }
   }
 }
 
 resource "aws_wafv2_web_acl" "cloudfront" {
-  provider = aws.us_east_1  
-  
+  provider = aws.us_east_1
+
   name  = "${var.project_name}-${var.environment}-waf-cloudfront"
-  scope = "CLOUDFRONT"  
+  scope = "CLOUDFRONT"
 
   default_action {
     allow {}
+  }
+
+  dynamic "rule" {
+    for_each = length(var.allowlist_ipv4_cidrs) > 0 ? [1] : []
+    content {
+      name     = "allowlisted-ips"
+      priority = 0
+
+      action {
+        allow {}
+      }
+
+      statement {
+        ip_set_reference_statement {
+          arn = aws_wafv2_ip_set.allowlist[0].arn
+        }
+      }
+
+      visibility_config {
+        cloudwatch_metrics_enabled = true
+        metric_name                = "AllowlistRule"
+        sampled_requests_enabled   = true
+      }
+    }
   }
 
   rule {
@@ -70,8 +94,8 @@ resource "aws_wafv2_web_acl" "cloudfront" {
       managed_rule_group_statement {
         vendor_name = "AWS"
         name        = "AWSManagedRulesCommonRuleSet"
-        
-        
+
+
         # rule_action_override {
         #   name = "SizeRestrictions_BODY"
         #   action_to_use {
@@ -98,7 +122,7 @@ resource "aws_wafv2_web_acl" "cloudfront" {
 
     statement {
       rate_based_statement {
-        limit              = 2000  # 2000 requêtes par IP toutes les 5 minutes
+        limit              = 2000 # 2000 requêtes par IP toutes les 5 minutes
         aggregate_key_type = "IP"
       }
     }
@@ -151,10 +175,26 @@ resource "aws_wafv2_web_acl" "cloudfront" {
   }
 }
 
+resource "aws_wafv2_ip_set" "allowlist" {
+  provider = aws.us_east_1
+  count    = length(var.allowlist_ipv4_cidrs) > 0 ? 1 : 0
+
+  name               = "${var.project_name}-${var.environment}-waf-allowlist"
+  description        = "Allowlisted IPv4 addresses for load tests and ops access"
+  scope              = "CLOUDFRONT"
+  ip_address_version = "IPV4"
+  addresses          = var.allowlist_ipv4_cidrs
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-waf-allowlist"
+    Environment = var.environment
+  }
+}
+
 resource "aws_cloudwatch_log_group" "waf_logs" {
   provider = aws.us_east_1
-  
-  name = "aws-waf-logs-${var.project_name}-${var.environment}"
+
+  name              = "aws-waf-logs-${var.project_name}-${var.environment}"
   retention_in_days = 7
 
   tags = {
@@ -166,7 +206,7 @@ resource "aws_cloudwatch_log_group" "waf_logs" {
 
 resource "aws_wafv2_web_acl_logging_configuration" "main" {
   provider = aws.us_east_1
-  
+
   resource_arn            = aws_wafv2_web_acl.cloudfront.arn
   log_destination_configs = [aws_cloudwatch_log_group.waf_logs.arn]
 

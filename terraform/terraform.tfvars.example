@@ -30,6 +30,9 @@ prestashop_domain         = ""  # Will be set to ALB DNS if empty
 # Security
 allowed_cidr_blocks = ["0.0.0.0/0"]  # Restrict in production
 key_pair_name       = ""  # Optional: set only if the key pair already exists in AWS
+waf_allowlist_ipv4_cidrs = [
+  # "203.0.113.10/32"
+]
 
 # DR Configuration (Disabled by default for cost savings)
 enable_dr = false  # Set to true if disaster recovery is required (~$20/month additional cost)

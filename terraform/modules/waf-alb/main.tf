@@ -9,10 +9,34 @@ terraform {
 
 resource "aws_wafv2_web_acl" "alb" {
   name  = "${var.project_name}-${var.environment}-waf-alb"
-  scope = "REGIONAL"  # Pour ALB (pas CLOUDFRONT)
+  scope = "REGIONAL" # Pour ALB (pas CLOUDFRONT)
 
   default_action {
     allow {}
+  }
+
+  dynamic "rule" {
+    for_each = length(var.allowlist_ipv4_cidrs) > 0 ? [1] : []
+    content {
+      name     = "allowlisted-ips"
+      priority = 0
+
+      action {
+        allow {}
+      }
+
+      statement {
+        ip_set_reference_statement {
+          arn = aws_wafv2_ip_set.allowlist[0].arn
+        }
+      }
+
+      visibility_config {
+        cloudwatch_metrics_enabled = true
+        metric_name                = "AllowlistRule-ALB"
+        sampled_requests_enabled   = true
+      }
+    }
   }
 
 
@@ -88,7 +112,7 @@ resource "aws_wafv2_web_acl" "alb" {
 
     statement {
       rate_based_statement {
-        limit           = 2000  # 2000 req/5min par IP
+        limit              = 2000 # 2000 req/5min par IP
         aggregate_key_type = "IP"
       }
     }
@@ -120,8 +144,23 @@ resource "aws_wafv2_web_acl" "alb" {
   }
 }
 
+resource "aws_wafv2_ip_set" "allowlist" {
+  count = length(var.allowlist_ipv4_cidrs) > 0 ? 1 : 0
+
+  name               = "${var.project_name}-${var.environment}-waf-alb-allowlist"
+  description        = "Allowlisted IPv4 addresses for load tests and ops access"
+  scope              = "REGIONAL"
+  ip_address_version = "IPV4"
+  addresses          = var.allowlist_ipv4_cidrs
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-waf-alb-allowlist"
+    Environment = var.environment
+  }
+}
+
 resource "aws_cloudwatch_log_group" "waf_logs" {
-  name = "aws-waf-logs-${var.project_name}-${var.environment}-alb"
+  name              = "aws-waf-logs-${var.project_name}-${var.environment}-alb"
   retention_in_days = 7
 
   tags = {
@@ -131,7 +170,7 @@ resource "aws_cloudwatch_log_group" "waf_logs" {
 }
 
 resource "aws_wafv2_web_acl_logging_configuration" "main" {
-  resource_arn      = aws_wafv2_web_acl.alb.arn
+  resource_arn            = aws_wafv2_web_acl.alb.arn
   log_destination_configs = [aws_cloudwatch_log_group.waf_logs.arn]
 
   redacted_fields {

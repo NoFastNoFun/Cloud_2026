@@ -160,9 +160,10 @@ module "primary_s3" {
 }
 
 module "primary_waf" {
-  source       = "./modules/waf"
-  project_name = var.project_name
-  environment  = var.environment
+  source               = "./modules/waf"
+  project_name         = var.project_name
+  environment          = var.environment
+  allowlist_ipv4_cidrs = var.waf_allowlist_ipv4_cidrs
 
   providers = {
     aws           = aws.us_east_1
@@ -192,10 +193,11 @@ module "primary_alb" {
 }
 
 module "waf_alb" {
-  source       = "./modules/waf-alb"
-  project_name = var.project_name
-  environment  = var.environment
-  alb_arn      = module.primary_alb.lb_arn
+  source               = "./modules/waf-alb"
+  project_name         = var.project_name
+  environment          = var.environment
+  alb_arn              = module.primary_alb.lb_arn
+  allowlist_ipv4_cidrs = var.waf_allowlist_ipv4_cidrs
 }
 
 

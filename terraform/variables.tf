@@ -125,6 +125,12 @@ variable "allowed_cidr_blocks" {
   default     = ["0.0.0.0/0"]
 }
 
+variable "waf_allowlist_ipv4_cidrs" {
+  description = "IPv4 CIDRs allowed to bypass WAF checks (for trusted test/client IPs)"
+  type        = list(string)
+  default     = []
+}
+
 variable "key_pair_name" {
   description = "AWS Key Pair name for EC2 instances"
   type        = string
