@@ -163,6 +163,7 @@ module "primary_waf" {
   source       = "./modules/waf"
   project_name = var.project_name
   environment  = var.environment
+  rate_limit_per_ip = var.waf_rate_limit_per_ip
 
   providers = {
     aws           = aws.us_east_1
@@ -196,6 +197,7 @@ module "waf_alb" {
   project_name = var.project_name
   environment  = var.environment
   alb_arn      = module.primary_alb.lb_arn
+  rate_limit_per_ip = var.waf_alb_rate_limit_per_ip
 }
 
 

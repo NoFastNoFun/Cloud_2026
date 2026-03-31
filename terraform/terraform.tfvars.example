@@ -77,3 +77,8 @@ cloudwatch_alarm_email_endpoints = [
   # "ops-team@example.com"
 ]
 
+# WAF rate limits (5-minute window, per IP)
+# Test branch: values raised so load tests are not blocked by WAF rate limiting
+waf_rate_limit_per_ip     = 200000
+waf_alb_rate_limit_per_ip = 200000
+

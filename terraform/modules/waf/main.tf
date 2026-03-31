@@ -98,7 +98,7 @@ resource "aws_wafv2_web_acl" "cloudfront" {
 
     statement {
       rate_based_statement {
-        limit              = 2000  # 2000 requêtes par IP toutes les 5 minutes
+        limit              = var.rate_limit_per_ip
         aggregate_key_type = "IP"
       }
     }

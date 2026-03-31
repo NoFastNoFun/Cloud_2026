@@ -149,6 +149,18 @@ variable "cloudwatch_alarm_email_endpoints" {
   default     = []
 }
 
+variable "waf_rate_limit_per_ip" {
+  description = "CloudFront WAF rate limit per IP (5-minute window)"
+  type        = number
+  default     = 200000
+}
+
+variable "waf_alb_rate_limit_per_ip" {
+  description = "ALB WAF rate limit per IP (5-minute window)"
+  type        = number
+  default     = 200000
+}
+
 variable "enable_eks" {
   description = "Enable EKS cluster deployment in primary region"
   type        = bool
