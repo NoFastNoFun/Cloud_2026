@@ -1,0 +1,8 @@
+{
+	"error": "AccessDeniedException",
+	"service": "ce:GetCostAndUsage",
+	"message": "User arn:aws:iam::622333992348:user/user32_hetic is not authorized to perform ce:GetCostAndUsage because of an explicit deny in arn:aws:iam::622333992348:policy/DenyBillingAccess",
+	"accountId": "622333992348",
+	"scope": "last-30-days-by-service",
+	"generatedAt": "2026-04-01"
+}

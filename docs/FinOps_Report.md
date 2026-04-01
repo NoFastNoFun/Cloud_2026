@@ -8,6 +8,8 @@ Owner: team operations
 
 Control cloud spending while preserving performance and reliability targets for high traffic events.
 
+Scope note: this report is focused on GreenLeaf only. Other account-level budgets and projects are out of scope.
+
 ## 2. Cost Baseline (estimated)
 
 Reference configuration (cost-optimized profile):
@@ -80,3 +82,12 @@ Track weekly:
 2. 90k user simulations may require distributed generators and temporary overprovisioning.
 3. Insufficient tagging reduces cost attribution quality.
 4. Keeping EKS permanently enabled typically exceeds the $75-$100 monthly baseline.
+
+## 10. Evidence status (2026-04-01)
+
+- AWS Budgets export archived in `evidence/finops/budget-list.json`.
+- Weekly FinOps snapshot archived in `evidence/finops/weekly-report.md`.
+- Cost Explorer export by service could not be produced because `ce:GetCostAndUsage` is blocked by `DenyBillingAccess`.
+- Cost split by tag `Project` is blocked by the same Billing denial policy.
+- No GreenLeaf-dedicated budget was found in the current AWS Budgets export.
+- Non-GreenLeaf budgets in the account are intentionally excluded from analysis.

@@ -1,69 +1,70 @@
-# Post-Mortem Template - Black Friday Incident
+﻿# Modèle de Post-Mortem - Incident Black Friday
 
-Incident ID: `BF-YYYYMMDD-XX`  
-Date: `YYYY-MM-DD`  
-Severity: `SEV1/SEV2/SEV3`  
-Incident Commander: `name`
+ID d'Incident : \BF-YYYYMMDD-XX\
+Date : \YYYY-MM-DD\
+Sévérité : \SEV1/SEV2/SEV3\
+Commandant d'incident : \
+om\
 
-## 1. Executive Summary
+## 1. Résumé Exécutif
 
-- What happened:
-- Customer impact:
-- Duration:
-- Current status:
+- Que s'est-il passé :
+- Impact client :
+- Durée :
+- Statut actuel :
 
-## 2. Timeline (UTC)
+## 2. Chronologie (UTC)
 
-| Time | Event |
+| Heure | Événement |
 |---|---|
-| HH:MM | Detection |
-| HH:MM | Escalation |
-| HH:MM | Mitigation action |
-| HH:MM | Recovery |
-| HH:MM | Incident closed |
+| HH:MM | Détection |
+| HH:MM | Escalade |
+| HH:MM | Action d'atténuation (Mitigation) |
+| HH:MM | Rétablissement (Recovery) |
+| HH:MM | Incident clos |
 
 ## 3. Impact
 
-- Availability impact:
-- Latency impact:
-- Error rate impact:
-- Revenue / conversion impact (if available):
+- Impact sur la disponibilité :
+- Impact sur la latence :
+- Impact sur le taux d'erreur :
+- Impact sur les revenus / conversions (si disponible) :
 
-## 4. Detection
+## 4. Détection
 
-- Which signal detected the issue first?
-- Alarm name(s):
-- Was alerting fast enough?
+- Quel signal a détecté le problème en premier ?
+- Nom(s) de l'alarme (ou des alarmes) :
+- L'alerte a-t-elle été assez rapide ?
 
-## 5. Root Cause
+## 5. Cause Racine (Root Cause)
 
-- Primary root cause:
-- Contributing factors:
-- Why not caught earlier:
+- Cause racine principale :
+- Facteurs contributifs :
+- Pourquoi le problème n'a-t-il pas été détecté plus tôt :
 
-## 6. Mitigation and Recovery
+## 6. Atténuation et Rétablissement
 
-- Immediate actions:
-- Recovery actions:
-- What worked:
-- What did not work:
+- Actions immédiates :
+- Actions de rétablissement :
+- Ce qui a fonctionné :
+- Ce qui n'a pas fonctionné :
 
-## 7. Corrective Actions
+## 7. Actions Correctives
 
-| Action | Owner | Due Date | Priority |
+| Action | Responsable | Date d'échéance | Priorité |
 |---|---|---|---|
-| Example: tune WAF rate limit | Name | YYYY-MM-DD | High |
+| Exemple : ajustement du rate limit WAF | Nom | YYYY-MM-DD | Haute |
 
-## 8. Prevention
+## 8. Prévention
 
-- Monitoring improvements:
-- Capacity and load test improvements:
-- Security improvements:
-- Process improvements:
+- Améliorations de la supervision (monitoring) :
+- Améliorations de la capacité et des tests de charge :
+- Améliorations de la sécurité :
+- Améliorations des processus :
 
-## 9. Attachments
+## 9. Pièces Jointes
 
-- CloudWatch screenshots
-- k6 result files
-- Logs excerpts
-- Links to relevant commits / PRs
+- Captures d'écran CloudWatch
+- Fichiers de résultats k6
+- Extraits de logs
+- Liens vers les commits / PR (Pull Requests) pertinents
