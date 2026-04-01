@@ -1,10 +1,9 @@
 ﻿# Modèle de Post-Mortem - Incident Black Friday
 
-ID d'Incident : \BF-YYYYMMDD-XX\
-Date : \YYYY-MM-DD\
-Sévérité : \SEV1/SEV2/SEV3\
-Commandant d'incident : \
-om\
+ID d'Incident : `BF-YYYYMMDD-XX`
+Date : `YYYY-MM-DD`
+Sévérité : `SEV1/SEV2/SEV3`
+Commandant d'incident : `nom`
 
 ## 1. Résumé Exécutif
 
