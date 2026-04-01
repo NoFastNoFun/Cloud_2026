@@ -265,6 +265,68 @@ resource "aws_cloudwatch_log_group" "nginx_access" {
 2. **Filtrer les logs avant envoi** (dans user_data.sh)
 3. **Utiliser des métriques moins fréquentes** (period plus long)
 
+## 🧪 Rapport technique observabilité (campagne du 2026-04-01)
+
+### Contexte de test
+
+- Endpoint testé : `https://d1ielqbdwca1k7.cloudfront.net`
+- Outil : `k6` (`tests/load/k6_blackfriday.js`)
+- Profil : `LOAD_PROFILE=quick`
+- Endpoints testés : `/`
+- WAF : règle de rate limiting configurée à `100000 requêtes / IP` (fenêtre AWS WAF standard de 5 minutes)
+
+### Résultats mesurés (fichier `tests/load/results/summary-quick-v5.json`)
+
+- Requêtes totales : `141824`
+- Débit moyen : `236.24 req/s`
+- `http_req_duration p95` : `74.15 ms` (objectif `< 2000 ms` atteint)
+- `http_req_failed` : `4.75%` (`6737` échecs)
+- `checks status is 2xx or 3xx` : `95.24%` succès
+
+### Lecture technique
+
+1. **Performance intrinsèque satisfaisante**
+  - La latence est bonne et stable sous charge (p95 << 2 s).
+  - Le backend répond vite quand la requête est acceptée.
+
+2. **Fiabilité sous charge non conforme au critère cible**
+  - Le taux d'erreur observé (`4.75%`) dépasse le seuil projet (`< 1%`).
+  - Le critère d'acceptation Black Friday n'est donc pas validé sur ce run.
+
+3. **Hypothèse principale liée au WAF (à confirmer par métriques WAF/CloudFront)**
+  - Avec `236 req/s` depuis une source unique, on atteint environ `70800` requêtes sur 5 minutes.
+  - Ce volume reste inférieur à la limite actuellement déployée (`100000/IP`).
+  - Les erreurs observées (4.75%) ne sont donc pas expliquées automatiquement par le rate limit seul et nécessitent une corrélation WAF/CloudFront/ALB.
+
+### Vérifications à faire pour confirmer la cause
+
+1. CloudWatch Metrics (namespace WAFv2) :
+  - `BlockedRequests`
+  - `AllowedRequests`
+  - `CountedRequests`
+2. CloudFront : corréler les pics de `4xxErrorRate` pendant le test.
+3. ALB : vérifier `HTTPCode_ELB_4XX_Count` et `HTTPCode_ELB_5XX_Count`.
+4. Logs WAF/CloudFront : identifier les statuts dominants (403, 429, 5xx).
+
+### Plan de remédiation recommandé
+
+1. **Pour benchmark performance pur**
+  - Exclure temporairement l'IP de test de la règle rate-based WAF (allow-list contrôlée) ou augmenter le seuil pour la fenêtre de test.
+2. **Pour validation production réaliste**
+  - Conserver la protection WAF et distribuer la charge depuis plusieurs IP générateurs (load generators distribués).
+3. **Pour preuve d'observabilité**
+  - Archiver systématiquement :
+    - `k6 summary`
+    - capture dashboard CloudWatch
+    - snapshots alarmes avant/pendant/après
+    - métriques WAF/CloudFront/ALB corrélées temporellement
+
+### Statut de conformité (sur ce run)
+
+- Latence p95 `< 2 s` : **PASS**
+- Taux d'erreur `< 1%` : **FAIL** (`4.75%`)
+- Conclusion : **plateforme performante mais test biaisé par la protection edge en mono-IP**.
+
 ## 📚 Ressources supplémentaires
 
 - [Documentation AWS CloudWatch](https://docs.aws.amazon.com/cloudwatch/)
