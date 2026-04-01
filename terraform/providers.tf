@@ -66,16 +66,23 @@ data "aws_eks_cluster" "primary" {
   name  = local.effective_eks_cluster_name
 }
 
-data "aws_eks_cluster_auth" "primary" {
-  count = local.enable_k8s_providers ? 1 : 0
-  name  = local.effective_eks_cluster_name
-}
-
 provider "kubernetes" {
   alias                  = "eks"
   host                   = local.enable_k8s_providers ? data.aws_eks_cluster.primary[0].endpoint : null
   cluster_ca_certificate = local.enable_k8s_providers ? base64decode(data.aws_eks_cluster.primary[0].certificate_authority[0].data) : null
-  token                  = local.enable_k8s_providers ? data.aws_eks_cluster_auth.primary[0].token : null
+
+  exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    command     = "aws"
+    args = [
+      "eks",
+      "get-token",
+      "--region",
+      var.primary_region,
+      "--cluster-name",
+      local.effective_eks_cluster_name,
+    ]
+  }
 }
 
 provider "helm" {
@@ -84,6 +91,18 @@ provider "helm" {
   kubernetes {
     host                   = local.enable_k8s_providers ? data.aws_eks_cluster.primary[0].endpoint : null
     cluster_ca_certificate = local.enable_k8s_providers ? base64decode(data.aws_eks_cluster.primary[0].certificate_authority[0].data) : null
-    token                  = local.enable_k8s_providers ? data.aws_eks_cluster_auth.primary[0].token : null
+
+    exec {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "aws"
+      args = [
+        "eks",
+        "get-token",
+        "--region",
+        var.primary_region,
+        "--cluster-name",
+        local.effective_eks_cluster_name,
+      ]
+    }
   }
 }
