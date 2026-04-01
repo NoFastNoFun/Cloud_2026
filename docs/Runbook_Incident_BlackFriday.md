@@ -84,3 +84,9 @@ Close incident only when:
 1. Fill post-mortem template.
 2. Open corrective actions with owner and due date.
 3. Update this runbook if process gaps were found.
+
+## 8. DR Drill Lesson Learned
+
+- DR capacity can be scaled from 0 to 1 in eu-central-1, and the ASG reaches `InService`.
+- During the current drill, the DR ALB health check returned HTTP 502, which indicates an application/bootstrap readiness problem rather than an autoscaling problem.
+- Before a production failover sign-off, validate the DR user-data/bootstrap path, target-group health, and application endpoint response under the secondary region.
